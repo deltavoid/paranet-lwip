@@ -19,6 +19,9 @@
 
 // tcp_thread class ----------------------------
 
+
+#define TCP_THREAD_INPUT_RING_SIZE 128
+
 struct tcp_thread_ctx {
 
     pthread_t pthread_ctx;
@@ -26,6 +29,7 @@ struct tcp_thread_ctx {
     int id;
     volatile int running;
     int input_event_fd;
+    struct rte_ring* input_pkt_ring;
 
 
 
@@ -45,6 +49,7 @@ void* tcp_thread_run(void* arg)
 
     while (ctx->running)
     {
+        void* obj_ptr;
         LOG_DEBUG("tcp_thread_run: 2, id: %d\n", ctx->id);
 
         uint64_t val = 0;
@@ -54,6 +59,22 @@ void* tcp_thread_run(void* arg)
         }
 
         LOG_DEBUG("tcp_thread_run: 3, cnt: %d\n", cnt++);
+
+        if (rte_ring_dequeue(ctx->input_pkt_ring, &obj_ptr) == 0)
+        {
+            // get object
+            LOG_DEBUG("tcp_thread_run: 4, data: %d\n", *(int*)obj_ptr);
+
+            rte_free(obj_ptr); // get ownership
+        }
+        else
+        {
+         LOG_DEBUG("tcp_thread_run: 5, no element\n");   
+        }
+
+
+
+
 
         // sleep(1);        
     }
@@ -74,6 +95,13 @@ int tcp_thread_init(struct tcp_thread_ctx* ctx, int id)
     }
     ctx->input_event_fd = ret;
 
+    /* 2. 创建多生产者单消费者无锁队列 */
+    ctx->input_pkt_ring = rte_ring_create("MPSC_RING", TCP_THREAD_INPUT_RING_SIZE,
+            rte_socket_id(), RING_F_SC_DEQ);    /* 单消费者出队标志 */
+    if  (ctx->input_pkt_ring == NULL)
+    {   LOG_INFO("create input ring failed\n");
+        return -1;
+    }
 
 
     // create pthread
@@ -88,8 +116,9 @@ int tcp_thread_init(struct tcp_thread_ctx* ctx, int id)
 
 
 
-void tcp_thread_destroy()
+void tcp_thread_destroy(struct tcp_thread_ctx* ctx)
 {
+    rte_ring_free(ctx->input_pkt_ring);
 }
 
 
@@ -105,6 +134,9 @@ void ip_thread_run()
 {
     // death loop  poll pkt only wait process exit
     
+
+    // ret = rte_ring_enqueue(g_ring, obj);
+
 }
 
 // todo, thread eventloop, base on epoll and eventfd.
@@ -138,13 +170,26 @@ void thread_framework_init(int ip_thread_num, int tcp_thread_num)
     for (int i = 0; i < 10; i++)
     {
         struct tcp_thread_ctx* ctx = &tcp_thread_ctxs[0];
-
+        // long data = i;
         LOG_DEBUG("thread_framework_init: 2, i: %d\n", i);
+
+        int *obj = rte_malloc("obj", sizeof(int), 0);
+        *obj = i;
+
+        ret = rte_ring_enqueue(ctx->input_pkt_ring, obj);
+        if  (ret != 0)
+        {   LOG_DEBUG("ring full\n");
+            
+            // continue;
+            goto sleep;
+        }
+
         uint64_t val = 1;
         if  (write(ctx->input_event_fd, &val, sizeof(val)) != sizeof(val))
         {   perror("write eventfd error");
         }
-        
+
+sleep:
         sleep(1);
     }
 
