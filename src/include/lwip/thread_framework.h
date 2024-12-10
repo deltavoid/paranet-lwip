@@ -7,6 +7,7 @@
 #define THREAD_FRAMEWORK_H
 
 
+void thread_framework_init(int ip_thread_num, int tcp_thread_num);
 
 
 

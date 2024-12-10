@@ -19,19 +19,19 @@ struct tcp_thread_cb {
 
 };
 
-void tcp_thread_init(struct tcp_thread_cb* cb)
-{
+// void tcp_thread_init(struct tcp_thread_cb* cb)
+// {
 
-}
+// }
 
-void tcp_thread_run(struct tcp_thread_cb* cb)
-{
+// void tcp_thread_run(struct tcp_thread_cb* cb)
+// {
 
-    // todo, eventloop, while(epoll) { process event}
-    // at first stage, just use eventfd as entry.
+//     // todo, eventloop, while(epoll) { process event}
+//     // at first stage, just use eventfd as entry.
 
 
-}
+// }
 
 void tcp_thread_destroy()
 {
@@ -64,7 +64,8 @@ int g_tcp_thread_num, g_ip_thread_num; // global variable, init at process initi
 
 void thread_framework_init(int ip_thread_num, int tcp_thread_num)
 {
-    LOG_DEBUG("thread_framework_init: 1\n");
+    LOG_DEBUG("thread_framework_init: 1, ip_thread_num: %d, tcp_thread_num: %d\n",
+        ip_thread_num, tcp_thread_num);
 
 }
 
