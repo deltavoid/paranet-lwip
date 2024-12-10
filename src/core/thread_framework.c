@@ -55,7 +55,7 @@ int tcp_thread_init(struct tcp_thread_ctx* ctx, int id)
     // create pthread
     int ret = pthread_create(&ctx->pthread_ctx, NULL, tcp_thread_run, ctx);
     if  (ret != 0)
-    {   LOG_INFO("pthread create failed\n");
+    {   perror("pthread create failed\n");
         return ret;
     }
 
@@ -92,15 +92,25 @@ void ip_thread_run()
 #define IP_THREAD_MAX_NUM 8 
 
 
+struct tcp_thread_ctx tcp_thread_ctxs[TCP_THREAD_MAX_NUM];
 int g_tcp_thread_num, g_ip_thread_num; // global variable, init at process initialization, and should not be changed after that.
 
 // todo, tcp_thread_cb list, ip_thread_cb_list
+
+
 
 
 void thread_framework_init(int ip_thread_num, int tcp_thread_num)
 {
     LOG_DEBUG("thread_framework_init: 1, ip_thread_num: %d, tcp_thread_num: %d\n",
         ip_thread_num, tcp_thread_num);
+
+
+    int ret = tcp_thread_init(&tcp_thread_ctxs[0], 0);
+    if  (ret != 0)
+    {   LOG_INFO("tcp_thread_init");
+    }
+
 
 }
 
