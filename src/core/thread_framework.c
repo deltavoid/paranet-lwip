@@ -25,6 +25,7 @@
 // tcp_thread class ----------------------------
 
 
+void tcp_input_backend(struct pbuf *p);
 
 
 void* tcp_thread_run(void* arg)
@@ -51,14 +52,15 @@ void* tcp_thread_run(void* arg)
             void* obj_ptr;
             if (rte_ring_dequeue(ctx->input_pkt_ring, &obj_ptr) == 0)
             {
-            // get object
-            // LOG_DEBUG("tcp_thread_run: 4, data: %d\n", *(int*)obj_ptr);
-            struct pbuf *p = (struct pbuf *)obj_ptr;
-            struct tcp_hdr *tcphdr = (struct tcp_hdr *)p->payload;
-            LOG_DEBUG("tcphdr: src: %d, dest: %d\n", 
+                // get object
+                // LOG_DEBUG("tcp_thread_run: 4, data: %d\n", *(int*)obj_ptr);
+                struct pbuf *p = (struct pbuf *)obj_ptr;
+                struct tcp_hdr *tcphdr = (struct tcp_hdr *)p->payload;
+                LOG_DEBUG("tcp_thread_run: tcphdr: src: %d, dest: %d\n", 
                     lwip_ntohs(tcphdr->src), lwip_ntohs(tcphdr->dest));
 
-            pbuf_free(p);
+                tcp_input_backend(p);
+                // pbuf_free(p);
 
             }
             else
