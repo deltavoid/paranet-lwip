@@ -234,14 +234,18 @@ tcp_free_listen(struct tcp_pcb *pcb)
 void
 tcp_tmr(void)
 {
+  LOG_DEBUG("tcp_tmr: 1, begin\n");
   /* Call tcp_fasttmr() every 250 ms */
   tcp_fasttmr();
 
   if (++tcp_timer & 1) {
     /* Call tcp_slowtmr() every 500 ms, i.e., every other timer
        tcp_tmr() is called. */
+       LOG_DEBUG("tcp_tmr: 2\n");
     tcp_slowtmr();
   }
+
+  LOG_DEBUG("tcp_tmr: 3, end\n");
 }
 
 #if LWIP_CALLBACK_API || TCP_LISTEN_BACKLOG

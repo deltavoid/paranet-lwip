@@ -49,6 +49,7 @@
 #include "lwip/pbuf.h"
 #include "lwip/etharp.h"
 #include "netif/ethernet.h"
+#include "lwip/logging.h"
 
 #define TCPIP_MSG_VAR_REF(name)     API_VAR_REF(name)
 #define TCPIP_MSG_VAR_DECLARE(name) API_VAR_DECLARE(struct tcpip_msg, name)
@@ -129,6 +130,8 @@ tcpip_thread(void *arg)
   struct tcpip_msg *msg;
   LWIP_UNUSED_ARG(arg);
 
+  LOG_DEBUG("tcpip_thread: 1, begin\n");
+
   LWIP_MARK_TCPIP_THREAD();
 
   LOCK_TCPIP_CORE();
@@ -136,17 +139,26 @@ tcpip_thread(void *arg)
     tcpip_init_done(tcpip_init_done_arg);
   }
 
+  LOG_DEBUG("tcpip_thread: 2\n");
   while (1) {                          /* MAIN Loop */
     LWIP_TCPIP_THREAD_ALIVE();
     /* wait for a message, timeouts are processed while waiting */
     TCPIP_MBOX_FETCH(&tcpip_mbox, (void **)&msg);
+
+    LOG_DEBUG("tcpip_thread: 3\n");
     if (msg == NULL) {
       LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip_thread: invalid message: NULL\n"));
       LWIP_ASSERT("tcpip_thread: invalid message", 0);
       continue;
     }
+
+    LOG_DEBUG("tcpip_thread: 4\n");
     tcpip_thread_handle_msg(msg);
+
+    LOG_DEBUG("tcpip_thread: 5\n");
   }
+
+  LOG_DEBUG("tcpip_thread: 6\n");
 }
 
 /* Handle a single tcpip_msg

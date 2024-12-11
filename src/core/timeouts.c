@@ -60,6 +60,7 @@
 #include "lwip/dhcp6.h"
 #include "lwip/sys.h"
 #include "lwip/pbuf.h"
+#include "lwip/logging.h"
 
 #if LWIP_DEBUG_TIMERNAMES
 #define HANDLER(x) x, #x
@@ -145,16 +146,25 @@ tcpip_tcp_timer(void *arg)
 {
   LWIP_UNUSED_ARG(arg);
 
+  LOG_DEBUG("tcpip_tcp_timer: 1, begin\n");
+
   /* call TCP timer handler */
   tcp_tmr();
+
+  
   /* timer still needed? */
+  LOG_DEBUG("tcpip_tcp_timer: 2\n");
   if (tcp_active_pcbs || tcp_tw_pcbs) {
     /* restart timer */
+    LOG_DEBUG("tcpip_tcp_timer: 3\n");
     sys_timeout(TCP_TMR_INTERVAL, tcpip_tcp_timer, NULL);
   } else {
     /* disable timer */
+    LOG_DEBUG("tcpip_tcp_timer: 4\n");
     tcpip_tcp_timer_active = 0;
   }
+
+  LOG_DEBUG("tcpip_tcp_timer: 5, end\n");
 }
 
 /**
@@ -292,6 +302,8 @@ sys_timeout(u32_t msecs, sys_timeout_handler handler, void *arg)
 {
   u32_t next_timeout_time;
 
+  LOG_DEBUG("sys_timeout: 1\n");
+
   LWIP_ASSERT_CORE_LOCKED();
 
   LWIP_ASSERT("Timeout time too long, max is LWIP_UINT32_MAX/4 msecs", msecs <= (LWIP_UINT32_MAX / 4));
@@ -303,6 +315,8 @@ sys_timeout(u32_t msecs, sys_timeout_handler handler, void *arg)
 #else
   sys_timeout_abs(next_timeout_time, handler, arg);
 #endif
+
+  LOG_DEBUG("sys_timeout: 2, end\n");
 }
 
 /**
@@ -353,6 +367,8 @@ sys_check_timeouts(void)
 {
   u32_t now;
 
+  LOG_DEBUG("sys_check_timeouts: 1, begin\n");
+
   LWIP_ASSERT_CORE_LOCKED();
 
   /* Process only timers expired at the start of the function. */
@@ -367,10 +383,12 @@ sys_check_timeouts(void)
 
     tmptimeout = next_timeout;
     if (tmptimeout == NULL) {
+      LOG_DEBUG("sys_check_timeouts: 2, end\n");
       return;
     }
 
     if (TIME_LESS_THAN(now, tmptimeout->time)) {
+      LOG_DEBUG("sys_check_timeouts: 3, end\n");
       return;
     }
 
@@ -393,6 +411,8 @@ sys_check_timeouts(void)
 
     /* Repeat until all expired timers have been called */
   } while (1);
+
+  LOG_DEBUG("sys_check_timeouts: 4, end\n");
 }
 
 /** Rebase the timeout times to the current time.
