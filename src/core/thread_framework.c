@@ -160,38 +160,44 @@ void thread_framework_init(int ip_thread_num, int tcp_thread_num)
 {
     LOG_DEBUG("thread_framework_init: 1, ip_thread_num: %d, tcp_thread_num: %d\n",
         ip_thread_num, tcp_thread_num);
+    
+    g_ip_thread_num = ip_thread_num;
+    g_tcp_thread_num = tcp_thread_num;
 
-
-    int ret = tcp_thread_init(&tcp_thread_ctxs[0], 0);
-    if  (ret != 0)
-    {   LOG_INFO("tcp_thread_init");
-    }
-
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < tcp_thread_num; i++)
     {
-        struct tcp_thread_ctx* ctx = &tcp_thread_ctxs[0];
-        // long data = i;
-        LOG_DEBUG("thread_framework_init: 2, i: %d\n", i);
-
-        int *obj = rte_malloc("obj", sizeof(int), 0);
-        *obj = i;
-
-        ret = rte_ring_enqueue(ctx->input_pkt_ring, obj);
+        int ret = tcp_thread_init(&tcp_thread_ctxs[i], i);
         if  (ret != 0)
-        {   LOG_DEBUG("ring full\n");
-            
-            // continue;
-            goto sleep;
+        {   LOG_INFO("tcp_thread_init");
         }
-
-        uint64_t val = 1;
-        if  (write(ctx->input_event_fd, &val, sizeof(val)) != sizeof(val))
-        {   perror("write eventfd error");
-        }
-
-sleep:
-        sleep(1);
     }
+
+
+//     for (int i = 0; i < 10; i++)
+//     {
+//         struct tcp_thread_ctx* ctx = &tcp_thread_ctxs[0];
+//         // long data = i;
+//         LOG_DEBUG("thread_framework_init: 2, i: %d\n", i);
+
+//         int *obj = rte_malloc("obj", sizeof(int), 0);
+//         *obj = i;
+
+//         ret = rte_ring_enqueue(ctx->input_pkt_ring, obj);
+//         if  (ret != 0)
+//         {   LOG_DEBUG("ring full\n");
+            
+//             // continue;
+//             goto sleep;
+//         }
+
+//         uint64_t val = 1;
+//         if  (write(ctx->input_event_fd, &val, sizeof(val)) != sizeof(val))
+//         {   perror("write eventfd error");
+//         }
+
+// sleep:
+//         sleep(1);
+//     }
 
 }
 
