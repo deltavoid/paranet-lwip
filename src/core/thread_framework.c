@@ -30,14 +30,13 @@
 void* tcp_thread_run(void* arg)
 {
     struct tcp_thread_ctx* ctx = (struct tcp_thread_ctx*)arg;
-    int cnt = 0;
+    // int cnt = 0;
 
     // todo, eventloop, while(epoll) { process event}
     // at first stage, just use eventfd as entry.
 
     while (ctx->running)
     {
-        void* obj_ptr;
         LOG_DEBUG("tcp_thread_run: 2, id: %d\n", ctx->id);
 
         uint64_t val = 0;
@@ -45,31 +44,29 @@ void* tcp_thread_run(void* arg)
         {   perror("read eventfd error");
             break;
         }
+        LOG_DEBUG("tcp_thread_run: 3, get val: %ld\n", val);
 
-        LOG_DEBUG("tcp_thread_run: 3, cnt: %d\n", cnt++);
-
-        if (rte_ring_dequeue(ctx->input_pkt_ring, &obj_ptr) == 0)
+        for (uint64_t i = 0; i < val; i++)
         {
+            void* obj_ptr;
+            if (rte_ring_dequeue(ctx->input_pkt_ring, &obj_ptr) == 0)
+            {
             // get object
             // LOG_DEBUG("tcp_thread_run: 4, data: %d\n", *(int*)obj_ptr);
             struct pbuf *p = (struct pbuf *)obj_ptr;
-
-            // rte_free(obj_ptr); // get ownership
-
             struct tcp_hdr *tcphdr = (struct tcp_hdr *)p->payload;
-            LOG_DEBUG("tcphdr: src: %d, dest: %d", 
+            LOG_DEBUG("tcphdr: src: %d, dest: %d\n", 
                     lwip_ntohs(tcphdr->src), lwip_ntohs(tcphdr->dest));
 
             pbuf_free(p);
 
+            }
+            else
+            {
+                LOG_DEBUG("tcp_thread_run: 5, no element\n");   
+                break;
+            }
         }
-        else
-        {
-         LOG_DEBUG("tcp_thread_run: 5, no element\n");   
-        }
-
-
-
 
 
         // sleep(1);        
