@@ -38,6 +38,12 @@ extern int g_tcp_thread_num, g_ip_thread_num; // global variable, init at proces
 
 
 
+static inline struct tcp_thread_ctx* get_tcp_thread_ctx_by_id(int id)
+{
+    if  (!(id >= 0 && id < g_tcp_thread_num)) return NULL;
+    return &tcp_thread_ctxs[id];
+}
+
 void thread_framework_init(int ip_thread_num, int tcp_thread_num);
 
 

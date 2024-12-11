@@ -59,6 +59,7 @@
 #include "lwip/nd6.h"
 #endif /* LWIP_ND6_TCP_REACHABILITY_HINTS */
 #include "lwip/logging.h"
+#include "lwip/thread_framework.h"
 
 #include <string.h>
 
@@ -690,10 +691,14 @@ tcp_input_frontend(struct pbuf *p, struct netif *inp)
     goto dropped;
   }
 
+  
   // calculate hash code and put pkt into tcp input_pkt_ring
+  int hash_code = (tcphdr->src ^ tcphdr->dest) % g_tcp_thread_num;
+  struct tcp_thread_ctx* ctx = get_tcp_thread_ctx_by_id(hash_code);
+  LOG_DEBUG("tcp_input_frontend: 7, ctx id: %d\n", ctx->id);
 
 
-  LOG_DEBUG("tcp_input: 7, end\n");
+  LOG_DEBUG("tcp_input_frontend: 7, end\n");
   return;
 
 dropped:
