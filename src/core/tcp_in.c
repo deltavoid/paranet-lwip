@@ -690,6 +690,8 @@ tcp_input_frontend(struct pbuf *p, struct netif *inp)
     goto dropped;
   }
 
+  // calculate hash code and put pkt into tcp input_pkt_ring
+
 
   LOG_DEBUG("tcp_input: 7, end\n");
   return;

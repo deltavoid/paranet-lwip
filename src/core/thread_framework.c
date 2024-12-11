@@ -3,15 +3,17 @@
  * @author ZQY
 */
 
-#include <rte_ring.h>
+#include "lwip/thread_framework.h"
+
+// #include <rte_ring.h>
 #include <rte_malloc.h>
 #include <rte_eal.h>
 
-#include "lwip/thread_framework.h"
+
 
 #include "lwip/logging.h"
 
-#include <pthread.h>
+// #include <pthread.h>
 #include <sys/eventfd.h>
 #include <unistd.h>
 
@@ -20,24 +22,7 @@
 // tcp_thread class ----------------------------
 
 
-#define TCP_THREAD_INPUT_RING_SIZE 128
 
-struct tcp_thread_ctx {
-
-    pthread_t pthread_ctx;
-
-    int id;
-    volatile int running;
-    int input_event_fd;
-    struct rte_ring* input_pkt_ring;
-
-
-
-    // todo, dpdk ring for tcp pkt in process
-
-    // todo, tcp thread pkt output queue
-
-};
 
 void* tcp_thread_run(void* arg)
 {
@@ -144,8 +129,6 @@ void ip_thread_run()
 
 // thread framework object -------------------------
 
-#define TCP_THREAD_MAX_NUM 32
-#define IP_THREAD_MAX_NUM 8 
 
 
 struct tcp_thread_ctx tcp_thread_ctxs[TCP_THREAD_MAX_NUM];
