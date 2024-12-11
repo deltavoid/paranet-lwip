@@ -731,8 +731,8 @@ tcp_input_backend(struct pbuf *p)
   u8_t hdrlen_bytes;
   err_t err;
 
-  struct tcp_hdr *tcphdr = (struct tcp_hdr *)p->payload;
-  hdrlen_bytes = TCPH_HDRLEN_BYTES(tcphdr);
+  // struct tcp_hdr *tcphdr = (struct tcp_hdr *)p->payload;
+  // hdrlen_bytes = TCPH_HDRLEN_BYTES(tcphdr);
 
   LOG_DEBUG("tcp_input: 1\n");
 
@@ -747,7 +747,7 @@ tcp_input_backend(struct pbuf *p)
   TCP_STATS_INC(tcp.recv);
   MIB2_STATS_INC(mib2.tcpinsegs);
 
-  // tcphdr = (struct tcp_hdr *)p->payload;
+  tcphdr = (struct tcp_hdr *)p->payload;
 
 // #if TCP_INPUT_DEBUG
 //   tcp_debug_print(tcphdr);
@@ -784,7 +784,7 @@ tcp_input_backend(struct pbuf *p)
 // #endif /* CHECKSUM_CHECK_TCP */
 
 //   /* sanity-check header length */
-//   hdrlen_bytes = TCPH_HDRLEN_BYTES(tcphdr);
+  hdrlen_bytes = TCPH_HDRLEN_BYTES(tcphdr);
 //   if ((hdrlen_bytes < TCP_HLEN) || (hdrlen_bytes > p->tot_len)) {
 //     LWIP_DEBUGF(TCP_INPUT_DEBUG, ("tcp_input: invalid header length (%"U16_F")\n", (u16_t)hdrlen_bytes));
 //     TCP_STATS_INC(tcp.lenerr);
@@ -1285,10 +1285,12 @@ tcp_listen_input(struct tcp_pcb_listen *pcb)
     return;
   }
 
+  LOG_DEBUG("tcp_listen_input: 2\n");
   LWIP_ASSERT("tcp_listen_input: invalid pcb", pcb != NULL);
 
   /* In the LISTEN state, we check for incoming SYN segments,
      creates a new PCB, and responds with a SYN|ACK. */
+  LOG_DEBUG("tcp_listen_input: 3\n");
   if (flags & TCP_ACK) {
     /* For incoming segments with the ACK flag set, respond with a
        RST. */
