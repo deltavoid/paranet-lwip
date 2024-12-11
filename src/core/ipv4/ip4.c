@@ -709,7 +709,8 @@ ip4_input(struct pbuf *p, struct netif *inp)
 #if LWIP_TCP
       case IP_PROTO_TCP:
         MIB2_STATS_INC(mib2.ipindelivers);
-        tcp_input(p, inp);
+        // tcp_input(p, inp);
+        tcp_input_frontend(p, inp);
         break;
 #endif /* LWIP_TCP */
 #if LWIP_ICMP

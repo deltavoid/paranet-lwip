@@ -9,6 +9,7 @@
 #include <rte_ring.h>
 #include <pthread.h>
 
+// tcp_thread_ctx -----------------------------------
 
 #define TCP_THREAD_INPUT_RING_SIZE 128
 
@@ -28,6 +29,10 @@ struct tcp_thread_ctx {
     // todo, tcp thread pkt output queue
 
 };
+
+void tcp_thread_input_ring_notify(struct tcp_thread_ctx* ctx, uint64_t val);
+
+// thread framework -------------------
 
 #define TCP_THREAD_MAX_NUM 32
 #define IP_THREAD_MAX_NUM 8 

@@ -697,6 +697,16 @@ tcp_input_frontend(struct pbuf *p, struct netif *inp)
   struct tcp_thread_ctx* ctx = get_tcp_thread_ctx_by_id(hash_code);
   LOG_DEBUG("tcp_input_frontend: 7, ctx id: %d\n", ctx->id);
 
+  // put pkt into ctx's ring
+  int ret = rte_ring_enqueue(ctx->input_pkt_ring, p);
+  if  (ret != 0)
+  {   LOG_INFO("input_pkt_ring full.\n");
+      // just goto drop;
+      goto dropped;
+  }
+
+  tcp_thread_input_ring_notify(ctx, 1);
+
 
   LOG_DEBUG("tcp_input_frontend: 7, end\n");
   return;

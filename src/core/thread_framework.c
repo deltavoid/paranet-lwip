@@ -17,6 +17,9 @@
 #include <sys/eventfd.h>
 #include <unistd.h>
 
+#include "lwip/pbuf.h"
+#include "lwip/prot/tcp.h"
+#include "lwip/def.h"
 
 
 // tcp_thread class ----------------------------
@@ -48,9 +51,17 @@ void* tcp_thread_run(void* arg)
         if (rte_ring_dequeue(ctx->input_pkt_ring, &obj_ptr) == 0)
         {
             // get object
-            LOG_DEBUG("tcp_thread_run: 4, data: %d\n", *(int*)obj_ptr);
+            // LOG_DEBUG("tcp_thread_run: 4, data: %d\n", *(int*)obj_ptr);
+            struct pbuf *p = (struct pbuf *)obj_ptr;
 
-            rte_free(obj_ptr); // get ownership
+            // rte_free(obj_ptr); // get ownership
+
+            struct tcp_hdr *tcphdr = (struct tcp_hdr *)p->payload;
+            LOG_DEBUG("tcphdr: src: %d, dest: %d", 
+                    lwip_ntohs(tcphdr->src), lwip_ntohs(tcphdr->dest));
+
+            pbuf_free(p);
+
         }
         else
         {
@@ -65,6 +76,15 @@ void* tcp_thread_run(void* arg)
     }
 
     return NULL;
+}
+
+void tcp_thread_input_ring_notify(struct tcp_thread_ctx* ctx, uint64_t val)
+{
+    //         uint64_t val = 1;
+        if  (write(ctx->input_event_fd, &val, sizeof(val)) != sizeof(val))
+        {   perror("write eventfd error");
+        }
+
 }
 
 int tcp_thread_init(struct tcp_thread_ctx* ctx, int id)
