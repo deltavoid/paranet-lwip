@@ -367,7 +367,7 @@ sys_check_timeouts(void)
 {
   u32_t now;
 
-  LOG_DEBUG("sys_check_timeouts: 1, begin\n");
+  // LOG_DEBUG("sys_check_timeouts: 1, begin\n");
 
   LWIP_ASSERT_CORE_LOCKED();
 
@@ -383,12 +383,12 @@ sys_check_timeouts(void)
 
     tmptimeout = next_timeout;
     if (tmptimeout == NULL) {
-      LOG_DEBUG("sys_check_timeouts: 2, end\n");
+      // LOG_DEBUG("sys_check_timeouts: 2, end\n");
       return;
     }
 
     if (TIME_LESS_THAN(now, tmptimeout->time)) {
-      LOG_DEBUG("sys_check_timeouts: 3, end\n");
+      // LOG_DEBUG("sys_check_timeouts: 3, end\n");
       return;
     }
 
@@ -412,7 +412,7 @@ sys_check_timeouts(void)
     /* Repeat until all expired timers have been called */
   } while (1);
 
-  LOG_DEBUG("sys_check_timeouts: 4, end\n");
+  // LOG_DEBUG("sys_check_timeouts: 4, end\n");
 }
 
 /** Rebase the timeout times to the current time.
