@@ -89,6 +89,17 @@ static struct pbuf *recv_data;
 
 struct tcp_pcb *tcp_input_pcb;
 
+
+// for thread local use
+
+struct tcp_thread_input_variable {
+
+    struct tcp_hdr *tcphdr;
+};
+
+static  _Thread_local struct tcp_thread_input_variable tcp_in_var;
+
+
 /* Forward declarations. */
 static err_t tcp_process(struct tcp_pcb *pcb);
 static void tcp_receive(struct tcp_pcb *pcb);
@@ -748,6 +759,7 @@ tcp_input_backend(struct pbuf *p)
   MIB2_STATS_INC(mib2.tcpinsegs);
 
   tcphdr = (struct tcp_hdr *)p->payload;
+  tcp_in_var.tcphdr = (struct tcp_hdr *)p->payload;
 
 // #if TCP_INPUT_DEBUG
 //   tcp_debug_print(tcphdr);
