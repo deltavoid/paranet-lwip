@@ -899,7 +899,7 @@ tcp_input_backend(struct pbuf *p)
     }
   }
 
-  LOG_DEBUG("tcp_input_backend: 3\n");
+  LOG_DEBUG("tcp_input_backend: 3, check for tcp_active_pcbs\n");
   /* Demultiplex an incoming segment. 
    * First, we check if it is destined for an active connection. 
    */
@@ -941,7 +941,7 @@ tcp_input_backend(struct pbuf *p)
   LOG_DEBUG("tcp_input_backend: 4\n");
   if (pcb == NULL) {
 
-    LOG_DEBUG("tcp_input_backend: 4.1\n");
+    LOG_DEBUG("tcp_input_backend: 4.1, check for tcp_tw_pcbs\n");
     /* If it did not go to an active connection, we check the connections
        in the TIME-WAIT state. */
     for (pcb = tcp_tw_pcbs; pcb != NULL; pcb = pcb->next) {
@@ -966,15 +966,20 @@ tcp_input_backend(struct pbuf *p)
                                        tcp_in_var.tcphdr_opt2, p) == ERR_OK)
 #endif
         {
+          // timewait process, should pass packet.
+          LOG_DEBUG("tcp_input_backend: 4.2, tcp_timewait_input\n");
           tcp_timewait_input(pcb);
         }
         pbuf_free(p);
+        
+        LOG_DEBUG("tcp_input_backend: 4.3, end from tcp_timewait_input\n");
         return;
       }
     }
 
     /* Finally, if we still did not get a match, we check all PCBs that
        are LISTENing for incoming connections. */
+    LOG_DEBUG("tcp_input_backend: 4.4, check for tcp_listen_pcbs\n");
     prev = NULL;
     for (lpcb = tcp_listen_pcbs.listen_pcbs; lpcb != NULL; lpcb = lpcb->next) {
       /* check if PCB is bound to specific netif */
@@ -1038,9 +1043,12 @@ tcp_input_backend(struct pbuf *p)
                                      tcp_in_var.tcphdr_opt1len, tcp_in_var.tcphdr_opt2, p) == ERR_OK)
 #endif
       {
+        // linten process, should pass packet.
+        LOG_DEBUG("tcp_input_backend: 4.5, tcp_listen_input\n");
         tcp_listen_input(lpcb);
       }
       pbuf_free(p);
+      LOG_DEBUG("tcp_input_backend: 4.6, end from tcp_listen_input\n");
       return;
     }
   }
@@ -1065,7 +1073,7 @@ tcp_input_backend(struct pbuf *p)
   LOG_DEBUG("tcp_input_backend: 6\n");
   if (pcb != NULL) {
 
-    LOG_DEBUG("tcp_input_backend: 6.1\n");
+    LOG_DEBUG("tcp_input_backend: 6.1, process connection\n");
     /* The incoming segment belongs to a connection. */
 #if TCP_INPUT_DEBUG
     tcp_debug_print_state(pcb->state);
@@ -1242,7 +1250,11 @@ aborted:
       pbuf_free(tcp_in_var.inseg.p);
       tcp_in_var.inseg.p = NULL;
     }
+
+    
   } else {
+
+    LOG_DEBUG("tcp_input_backend: 7, no matching PCB was found\n");
     /* If no matching PCB was found, send a TCP RST (reset) to the
        sender. */
     LWIP_DEBUGF(TCP_RST_DEBUG, ("tcp_input: no PCB match found, resetting.\n"));
@@ -1257,7 +1269,7 @@ aborted:
 
   LWIP_ASSERT("tcp_input: tcp_pcbs_sane()", tcp_pcbs_sane());
   PERF_STOP("tcp_input");
-  LOG_DEBUG("tcp_input_backend: 7, end\n");
+  LOG_DEBUG("tcp_input_backend: 8, end\n");
   return;
 dropped:
   TCP_STATS_INC(tcp.drop);
@@ -1426,12 +1438,14 @@ tcp_listen_input(struct tcp_pcb_listen *pcb)
 static void
 tcp_timewait_input(struct tcp_pcb *pcb)
 {
+  LOG_DEBUG("tcp_timewait_input: 1, begin\n");
   /* RFC 1337: in TIME_WAIT, ignore RST and ACK FINs + any 'acceptable' segments */
   /* RFC 793 3.9 Event Processing - Segment Arrives:
    * - first check sequence number - we skip that one in TIME_WAIT (always
    *   acceptable since we only send ACKs)
    * - second check the RST bit (... return) */
   if (flags & TCP_RST) {
+    LOG_DEBUG("tcp_timewait_input: 2, end\n");
     return;
   }
 
@@ -1452,12 +1466,15 @@ tcp_timewait_input(struct tcp_pcb *pcb)
          Restart the 2 MSL time-wait timeout.*/
     pcb->tmr = tcp_ticks;
   }
-
+ 
+  LOG_DEBUG("tcp_timewait_input: 4\n");
   if ((tcplen > 0)) {
     /* Acknowledge data, FIN or out-of-window SYN */
     tcp_ack_now(pcb);
     tcp_output(pcb);
   }
+
+  LOG_DEBUG("tcp_timewait_input: 5, end\n");
   return;
 }
 
