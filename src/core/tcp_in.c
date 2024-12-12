@@ -1251,7 +1251,7 @@ aborted:
       tcp_in_var.inseg.p = NULL;
     }
 
-    
+
   } else {
 
     LOG_DEBUG("tcp_input_backend: 7, no matching PCB was found\n");
@@ -1559,8 +1559,10 @@ tcp_process(struct tcp_pcb *pcb)
   tcp_parseopt(pcb);
 
   /* Do different things depending on the TCP state. */
+  LOG_DEBUG("tcp_process: 2, pck->state: %d\n", pcb->state);
   switch (pcb->state) {
     case SYN_SENT:
+      LOG_DEBUG("tcp_process: 2.1, case SYN_SENT\n");
       LWIP_DEBUGF(TCP_INPUT_DEBUG, ("SYN-SENT: ackno %"U32_F" pcb->snd_nxt %"U32_F" unacked %s %"U32_F"\n",
                                     ackno, pcb->snd_nxt, pcb->unacked ? "" : " empty:",
                                     pcb->unacked ? lwip_ntohl(pcb->unacked->tcphdr->seqno) : 0));
@@ -1629,7 +1631,10 @@ tcp_process(struct tcp_pcb *pcb)
         }
       }
       break;
+    
     case SYN_RCVD:
+      LOG_DEBUG("tcp_process: 2.2, case SYN_RCVD\n");
+
       if (flags & TCP_ACK) {
         /* expected ACK number? */
         if (TCP_SEQ_BETWEEN(ackno, pcb->lastack + 1, pcb->snd_nxt)) {
@@ -1688,8 +1693,10 @@ tcp_process(struct tcp_pcb *pcb)
       }
       break;
     case CLOSE_WAIT:
+      LOG_DEBUG("tcp_process: 2.3, case CLOSE_WAIT\n");
     /* FALLTHROUGH */
     case ESTABLISHED:
+      LOG_DEBUG("tcp_process: 2.4, case ESTABLISHED\n");
       tcp_receive(pcb);
       if (recv_flags & TF_GOT_FIN) { /* passive close */
         tcp_ack_now(pcb);
@@ -1697,6 +1704,7 @@ tcp_process(struct tcp_pcb *pcb)
       }
       break;
     case FIN_WAIT_1:
+      LOG_DEBUG("tcp_process: 2.5, case FIN_WAIT_1\n");
       tcp_receive(pcb);
       if (recv_flags & TF_GOT_FIN) {
         if ((flags & TCP_ACK) && (ackno == pcb->snd_nxt) &&
@@ -1719,6 +1727,7 @@ tcp_process(struct tcp_pcb *pcb)
       }
       break;
     case FIN_WAIT_2:
+      LOG_DEBUG("tcp_process: 2.6, case FIN_WAIT_2\n");
       tcp_receive(pcb);
       if (recv_flags & TF_GOT_FIN) {
         LWIP_DEBUGF(TCP_DEBUG, ("TCP connection closed: FIN_WAIT_2 %"U16_F" -> %"U16_F".\n", 
@@ -1731,6 +1740,7 @@ tcp_process(struct tcp_pcb *pcb)
       }
       break;
     case CLOSING:
+      LOG_DEBUG("tcp_process: 2.7, case CLOSING\n");
       tcp_receive(pcb);
       if ((flags & TCP_ACK) && ackno == pcb->snd_nxt && pcb->unsent == NULL) {
         LWIP_DEBUGF(TCP_DEBUG, ("TCP connection closed: CLOSING %"U16_F" -> %"U16_F".\n", 
@@ -1742,6 +1752,7 @@ tcp_process(struct tcp_pcb *pcb)
       }
       break;
     case LAST_ACK:
+      LOG_DEBUG("tcp_process: 2.8, case LAST_ACK\n");
       tcp_receive(pcb);
       if ((flags & TCP_ACK) && ackno == pcb->snd_nxt && pcb->unsent == NULL) {
         LWIP_DEBUGF(TCP_DEBUG, ("TCP connection closed: LAST_ACK %"U16_F" -> %"U16_F".\n", 
@@ -1751,10 +1762,11 @@ tcp_process(struct tcp_pcb *pcb)
       }
       break;
     default:
+      LOG_DEBUG("tcp_process: 2.9, case default\n");
       break;
   }
 
-  LOG_DEBUG("tcp_process: 2, end\n");
+  LOG_DEBUG("tcp_process: 3, end\n");
   return ERR_OK;
 }
 
