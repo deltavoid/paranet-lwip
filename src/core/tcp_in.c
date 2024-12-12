@@ -74,7 +74,7 @@
    processing of TCP segments. They are set by the tcp_input()
    function. */
 static struct tcp_seg inseg;
-static struct tcp_hdr *tcphdr;
+static _Thread_local struct tcp_hdr *tcphdr;
 static u16_t tcphdr_optlen;
 static u16_t tcphdr_opt1len;
 static u8_t *tcphdr_opt2;
