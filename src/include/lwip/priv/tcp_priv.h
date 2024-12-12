@@ -325,7 +325,7 @@ struct tcp_seg {
 #endif /* LWIP_WND_SCALE */
 
 /* Global variables: */
-extern struct tcp_pcb *tcp_input_pcb;
+extern _Thread_local struct tcp_pcb *tcp_input_pcb;
 extern u32_t tcp_ticks;
 extern u8_t tcp_active_pcbs_changed;
 

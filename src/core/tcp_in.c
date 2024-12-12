@@ -104,7 +104,7 @@ static  _Thread_local struct tcp_thread_input_variable tcp_in_var;
 
 
 
-struct tcp_pcb *tcp_input_pcb;
+_Thread_local struct tcp_pcb *tcp_input_pcb;
 
 
 
