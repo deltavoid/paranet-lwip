@@ -62,6 +62,7 @@
 #include "lwip/thread_framework.h"
 
 #include <string.h>
+#include <rte_malloc.h>
 
 #ifdef LWIP_HOOK_FILENAME
 #include LWIP_HOOK_FILENAME
@@ -718,8 +719,18 @@ tcp_input_frontend(struct pbuf *p, struct netif *inp)
   struct tcp_thread_ctx* ctx = get_tcp_thread_ctx_by_id(hash_code);
   LOG_DEBUG("tcp_input_frontend: 2, ctx id: %d\n", ctx->id);
 
+  struct tcp_thread_input_pkt_wrapper*  wrapper  = 
+      rte_malloc("obj", sizeof(struct tcp_thread_input_pkt_wrapper), 0);
+  if  (wrapper == NULL)
+  {   LOG_INFO("malloc tcp_thread_input_pkt_wrapper failed\n");
+      goto dropped;
+  }
+
+  wrapper->ip_data = ip_data;
+  wrapper->p = p;
+
   // put pkt into ctx's ring
-  int ret = rte_ring_enqueue(ctx->input_pkt_ring, p);
+  int ret = rte_ring_enqueue(ctx->input_pkt_ring, wrapper);
   if  (ret != 0)
   {   LOG_INFO("input_pkt_ring full.\n");
       // just goto drop;

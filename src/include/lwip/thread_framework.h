@@ -9,7 +9,16 @@
 #include <rte_ring.h>
 #include <pthread.h>
 
+#include "lwip/ip.h"
+
 // tcp_thread_ctx -----------------------------------
+
+struct tcp_thread_input_pkt_wrapper {
+
+    struct ip_globals ip_data;
+
+    struct pbuf *p;
+};
 
 #define TCP_THREAD_INPUT_RING_SIZE 128
 

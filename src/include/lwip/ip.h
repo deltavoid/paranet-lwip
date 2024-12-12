@@ -125,7 +125,7 @@ struct ip_globals
   /** Destination IP address of current_header */
   ip_addr_t current_iphdr_dest;
 };
-extern struct ip_globals ip_data;
+extern _Thread_local  struct ip_globals ip_data;
 
 
 /** Get the interface that accepted the current packet.

@@ -54,10 +54,16 @@ void* tcp_thread_run(void* arg)
             {
                 // get object
                 // LOG_DEBUG("tcp_thread_run: 4, data: %d\n", *(int*)obj_ptr);
-                struct pbuf *p = (struct pbuf *)obj_ptr;
+                
+                struct tcp_thread_input_pkt_wrapper*  wrapper  = 
+                    (struct tcp_thread_input_pkt_wrapper*)obj_ptr;
+                struct pbuf *p = wrapper->p;
                 struct tcp_hdr *tcphdr = (struct tcp_hdr *)p->payload;
                 LOG_DEBUG("tcp_thread_run: tcphdr: src: %d, dest: %d\n", 
                     lwip_ntohs(tcphdr->src), lwip_ntohs(tcphdr->dest));
+                
+                ip_data = wrapper->ip_data;
+                rte_free(wrapper);
 
                 tcp_input_backend(p);
                 // pbuf_free(p);
