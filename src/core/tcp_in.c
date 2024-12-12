@@ -80,18 +80,14 @@
 // static u8_t *tcphdr_opt2;
 // static u16_t tcp_optidx;
 static _Thread_local u32_t seqno, ackno;
-static tcpwnd_size_t recv_acked;
-static u16_t tcplen;
-static u8_t flags;
+static _Thread_local tcpwnd_size_t recv_acked;
+static _Thread_local u16_t tcplen;
+static _Thread_local u8_t flags;
 
-static u8_t recv_flags;
-static struct pbuf *recv_data;
-
-struct tcp_pcb *tcp_input_pcb;
-
+static _Thread_local u8_t recv_flags;
+static _Thread_local struct pbuf *recv_data;
 
 // for thread local use
-
 struct tcp_thread_input_variable {
 
     struct tcp_seg inseg;
@@ -102,10 +98,14 @@ struct tcp_thread_input_variable {
     u8_t *tcphdr_opt2;
     u16_t tcp_optidx;
 
-
 };
 
 static  _Thread_local struct tcp_thread_input_variable tcp_in_var;
+
+
+
+struct tcp_pcb *tcp_input_pcb;
+
 
 
 /* Forward declarations. */
