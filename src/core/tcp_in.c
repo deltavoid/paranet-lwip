@@ -79,7 +79,7 @@
 // static u16_t tcphdr_opt1len;
 // static u8_t *tcphdr_opt2;
 // static u16_t tcp_optidx;
-static u32_t seqno, ackno;
+static _Thread_local u32_t seqno, ackno;
 static tcpwnd_size_t recv_acked;
 static u16_t tcplen;
 static u8_t flags;
