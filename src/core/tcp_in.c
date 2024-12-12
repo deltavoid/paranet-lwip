@@ -75,8 +75,8 @@
    function. */
 // static struct tcp_seg inseg;
 // static _Thread_local struct tcp_hdr *tcphdr;
-static u16_t tcphdr_optlen;
-static u16_t tcphdr_opt1len;
+// static u16_t tcphdr_optlen;
+// static u16_t tcphdr_opt1len;
 static u8_t *tcphdr_opt2;
 static u16_t tcp_optidx;
 static u32_t seqno, ackno;
@@ -96,6 +96,10 @@ struct tcp_thread_input_variable {
 
     struct tcp_seg inseg;
     struct tcp_hdr *tcphdr;
+
+    u16_t tcphdr_optlen;
+    u16_t tcphdr_opt1len;
+
 };
 
 static  _Thread_local struct tcp_thread_input_variable tcp_in_var;
@@ -813,11 +817,11 @@ tcp_input_backend(struct pbuf *p)
 
   /* Move the payload pointer in the pbuf so that it points to the
      TCP data instead of the TCP header. */
-  tcphdr_optlen = (u16_t)(hdrlen_bytes - TCP_HLEN);
+  tcp_in_var.tcphdr_optlen = (u16_t)(hdrlen_bytes - TCP_HLEN);
   tcphdr_opt2 = NULL;
   if (p->len >= hdrlen_bytes) {
     /* all options are in the first pbuf */
-    tcphdr_opt1len = tcphdr_optlen;
+    tcp_in_var.tcphdr_opt1len = tcp_in_var.tcphdr_optlen;
     pbuf_remove_header(p, hdrlen_bytes); /* cannot fail */
   } else {
 
@@ -831,12 +835,12 @@ tcp_input_backend(struct pbuf *p)
     pbuf_remove_header(p, TCP_HLEN);
 
     /* determine how long the first and second parts of the options are */
-    tcphdr_opt1len = p->len;
-    opt2len = (u16_t)(tcphdr_optlen - tcphdr_opt1len);
+    tcp_in_var.tcphdr_opt1len = p->len;
+    opt2len = (u16_t)(tcp_in_var.tcphdr_optlen - tcp_in_var.tcphdr_opt1len);
 
     /* options continue in the next pbuf: set p to zero length and hide the
         options in the next pbuf (adjusting p->tot_len) */
-    pbuf_remove_header(p, tcphdr_opt1len);
+    pbuf_remove_header(p, tcp_in_var.tcphdr_opt1len);
 
     /* check that the options fit in the second pbuf */
     if (opt2len > p->next->len) {
@@ -942,7 +946,7 @@ tcp_input_backend(struct pbuf *p)
            many segments for connections in TIME-WAIT. */
         LWIP_DEBUGF(TCP_INPUT_DEBUG, ("tcp_input: packed for TIME_WAITing connection.\n"));
 #ifdef LWIP_HOOK_TCP_INPACKET_PCB
-        if (LWIP_HOOK_TCP_INPACKET_PCB(pcb, tcphdr, tcphdr_optlen, tcphdr_opt1len,
+        if (LWIP_HOOK_TCP_INPACKET_PCB(pcb, tcphdr, tcp_in_var.tcphdr_optlen, tcp_in_var.tcphdr_opt1len,
                                        tcphdr_opt2, p) == ERR_OK)
 #endif
         {
@@ -1014,8 +1018,8 @@ tcp_input_backend(struct pbuf *p)
 
       LWIP_DEBUGF(TCP_INPUT_DEBUG, ("tcp_input: packed for LISTENing connection.\n"));
 #ifdef LWIP_HOOK_TCP_INPACKET_PCB
-      if (LWIP_HOOK_TCP_INPACKET_PCB((struct tcp_pcb *)lpcb, tcphdr, tcphdr_optlen,
-                                     tcphdr_opt1len, tcphdr_opt2, p) == ERR_OK)
+      if (LWIP_HOOK_TCP_INPACKET_PCB((struct tcp_pcb *)lpcb, tcphdr, tcp_in_var.tcphdr_optlen,
+                                     tcp_in_var.tcphdr_opt1len, tcphdr_opt2, p) == ERR_OK)
 #endif
       {
         tcp_listen_input(lpcb);
@@ -1035,8 +1039,8 @@ tcp_input_backend(struct pbuf *p)
 
 
 #ifdef LWIP_HOOK_TCP_INPACKET_PCB
-  if ((pcb != NULL) && LWIP_HOOK_TCP_INPACKET_PCB(pcb, tcphdr, tcphdr_optlen,
-      tcphdr_opt1len, tcphdr_opt2, p) != ERR_OK) {
+  if ((pcb != NULL) && LWIP_HOOK_TCP_INPACKET_PCB(pcb, tcphdr, tcp_in_var.tcphdr_optlen,
+      tcp_in_var.tcphdr_opt1len, tcphdr_opt2, p) != ERR_OK) {
     pbuf_free(p);
     return;
   }
@@ -2574,11 +2578,11 @@ static u8_t
 tcp_get_next_optbyte(void)
 {
   u16_t optidx = tcp_optidx++;
-  if ((tcphdr_opt2 == NULL) || (optidx < tcphdr_opt1len)) {
+  if ((tcphdr_opt2 == NULL) || (optidx < tcp_in_var.tcphdr_opt1len)) {
     u8_t *opts = (u8_t *)tcp_in_var.tcphdr + TCP_HLEN;
     return opts[optidx];
   } else {
-    u8_t idx = (u8_t)(optidx - tcphdr_opt1len);
+    u8_t idx = (u8_t)(optidx - tcp_in_var.tcphdr_opt1len);
     return tcphdr_opt2[idx];
   }
 }
@@ -2603,8 +2607,8 @@ tcp_parseopt(struct tcp_pcb *pcb)
   LWIP_ASSERT("tcp_parseopt: invalid pcb", pcb != NULL);
 
   /* Parse the TCP MSS option, if present. */
-  if (tcphdr_optlen != 0) {
-    for (tcp_optidx = 0; tcp_optidx < tcphdr_optlen; ) {
+  if (tcp_in_var.tcphdr_optlen != 0) {
+    for (tcp_optidx = 0; tcp_optidx < tcp_in_var.tcphdr_optlen; ) {
       u8_t opt = tcp_get_next_optbyte();
       switch (opt) {
         case LWIP_TCP_OPT_EOL:
@@ -2617,7 +2621,7 @@ tcp_parseopt(struct tcp_pcb *pcb)
           break;
         case LWIP_TCP_OPT_MSS:
           LWIP_DEBUGF(TCP_INPUT_DEBUG, ("tcp_parseopt: MSS\n"));
-          if (tcp_get_next_optbyte() != LWIP_TCP_OPT_LEN_MSS || (tcp_optidx - 2 + LWIP_TCP_OPT_LEN_MSS) > tcphdr_optlen) {
+          if (tcp_get_next_optbyte() != LWIP_TCP_OPT_LEN_MSS || (tcp_optidx - 2 + LWIP_TCP_OPT_LEN_MSS) > tcp_in_var.tcphdr_optlen) {
             /* Bad length */
             LWIP_DEBUGF(TCP_INPUT_DEBUG, ("tcp_parseopt: bad length\n"));
             return;
@@ -2631,7 +2635,7 @@ tcp_parseopt(struct tcp_pcb *pcb)
 #if LWIP_WND_SCALE
         case LWIP_TCP_OPT_WS:
           LWIP_DEBUGF(TCP_INPUT_DEBUG, ("tcp_parseopt: WND_SCALE\n"));
-          if (tcp_get_next_optbyte() != LWIP_TCP_OPT_LEN_WS || (tcp_optidx - 2 + LWIP_TCP_OPT_LEN_WS) > tcphdr_optlen) {
+          if (tcp_get_next_optbyte() != LWIP_TCP_OPT_LEN_WS || (tcp_optidx - 2 + LWIP_TCP_OPT_LEN_WS) > tcp_in_var.tcphdr_optlen) {
             /* Bad length */
             LWIP_DEBUGF(TCP_INPUT_DEBUG, ("tcp_parseopt: bad length\n"));
             return;
@@ -2657,7 +2661,7 @@ tcp_parseopt(struct tcp_pcb *pcb)
 #if LWIP_TCP_TIMESTAMPS
         case LWIP_TCP_OPT_TS:
           LWIP_DEBUGF(TCP_INPUT_DEBUG, ("tcp_parseopt: TS\n"));
-          if (tcp_get_next_optbyte() != LWIP_TCP_OPT_LEN_TS || (tcp_optidx - 2 + LWIP_TCP_OPT_LEN_TS) > tcphdr_optlen) {
+          if (tcp_get_next_optbyte() != LWIP_TCP_OPT_LEN_TS || (tcp_optidx - 2 + LWIP_TCP_OPT_LEN_TS) > tcp_in_var.tcphdr_optlen) {
             /* Bad length */
             LWIP_DEBUGF(TCP_INPUT_DEBUG, ("tcp_parseopt: bad length\n"));
             return;
@@ -2682,7 +2686,7 @@ tcp_parseopt(struct tcp_pcb *pcb)
 #if LWIP_TCP_SACK_OUT
         case LWIP_TCP_OPT_SACK_PERM:
           LWIP_DEBUGF(TCP_INPUT_DEBUG, ("tcp_parseopt: SACK_PERM\n"));
-          if (tcp_get_next_optbyte() != LWIP_TCP_OPT_LEN_SACK_PERM || (tcp_optidx - 2 + LWIP_TCP_OPT_LEN_SACK_PERM) > tcphdr_optlen) {
+          if (tcp_get_next_optbyte() != LWIP_TCP_OPT_LEN_SACK_PERM || (tcp_optidx - 2 + LWIP_TCP_OPT_LEN_SACK_PERM) > tcp_in_var.tcphdr_optlen) {
             /* Bad length */
             LWIP_DEBUGF(TCP_INPUT_DEBUG, ("tcp_parseopt: bad length\n"));
             return;
