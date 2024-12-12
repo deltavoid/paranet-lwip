@@ -668,6 +668,8 @@ tcp_input_frontend(struct pbuf *p, struct netif *inp)
 
   LWIP_UNUSED_ARG(inp);
 
+  LOG_DEBUG("tcp_input_frontend: 1, begin\n");
+
 #if TCP_INPUT_DEBUG
   tcp_debug_print(tcphdr);
 #endif
@@ -714,7 +716,7 @@ tcp_input_frontend(struct pbuf *p, struct netif *inp)
   // calculate hash code and put pkt into tcp input_pkt_ring
   int hash_code = (tcphdr->src ^ tcphdr->dest) % g_tcp_thread_num;
   struct tcp_thread_ctx* ctx = get_tcp_thread_ctx_by_id(hash_code);
-  LOG_DEBUG("tcp_input_frontend: 7, ctx id: %d\n", ctx->id);
+  LOG_DEBUG("tcp_input_frontend: 2, ctx id: %d\n", ctx->id);
 
   // put pkt into ctx's ring
   int ret = rte_ring_enqueue(ctx->input_pkt_ring, p);
@@ -727,7 +729,7 @@ tcp_input_frontend(struct pbuf *p, struct netif *inp)
   tcp_thread_input_ring_notify(ctx, 1);
 
 
-  LOG_DEBUG("tcp_input_frontend: 7, end\n");
+  LOG_DEBUG("tcp_input_frontend: 3, end\n");
   return;
 
 dropped:
@@ -755,7 +757,7 @@ tcp_input_backend(struct pbuf *p)
   struct tcp_hdr *tcphdr = tcp_in_var.tcphdr;
   // hdrlen_bytes = TCPH_HDRLEN_BYTES(tcphdr);
 
-  LOG_DEBUG("tcp_input: 1\n");
+  LOG_DEBUG("tcp_input_backend: 1\n");
 
 
 
@@ -865,7 +867,7 @@ tcp_input_backend(struct pbuf *p)
     LWIP_ASSERT("p->tot_len == p->next->tot_len", p->tot_len == p->next->tot_len);
   }
 
-  LOG_DEBUG("tcp_input: 2\n");
+  LOG_DEBUG("tcp_input_backend: 2\n");
   /* Convert fields in TCP header to host byte order. */
   tcphdr->src = lwip_ntohs(tcphdr->src);
   tcphdr->dest = lwip_ntohs(tcphdr->dest);
@@ -886,7 +888,7 @@ tcp_input_backend(struct pbuf *p)
     }
   }
 
-  LOG_DEBUG("tcp_input: 3\n");
+  LOG_DEBUG("tcp_input_backend: 3\n");
   /* Demultiplex an incoming segment. 
    * First, we check if it is destined for an active connection. 
    */
@@ -925,10 +927,10 @@ tcp_input_backend(struct pbuf *p)
     prev = pcb;
   }
 
-  LOG_DEBUG("tcp_input: 4\n");
+  LOG_DEBUG("tcp_input_backend: 4\n");
   if (pcb == NULL) {
 
-    LOG_DEBUG("tcp_input: 4.1\n");
+    LOG_DEBUG("tcp_input_backend: 4.1\n");
     /* If it did not go to an active connection, we check the connections
        in the TIME-WAIT state. */
     for (pcb = tcp_tw_pcbs; pcb != NULL; pcb = pcb->next) {
@@ -1032,7 +1034,7 @@ tcp_input_backend(struct pbuf *p)
     }
   }
 
-  LOG_DEBUG("tcp_input: 5\n");
+  LOG_DEBUG("tcp_input_backend: 5\n");
 
 #if TCP_INPUT_DEBUG
   LWIP_DEBUGF(TCP_INPUT_DEBUG, ("+-+-+-+-+-+-+-+-+-+-+-+-+-+- tcp_input: flags "));
@@ -1049,10 +1051,10 @@ tcp_input_backend(struct pbuf *p)
   }
 #endif
 
-  LOG_DEBUG("tcp_input: 6\n");
+  LOG_DEBUG("tcp_input_backend: 6\n");
   if (pcb != NULL) {
 
-    LOG_DEBUG("tcp_input: 6.1\n");
+    LOG_DEBUG("tcp_input_backend: 6.1\n");
     /* The incoming segment belongs to a connection. */
 #if TCP_INPUT_DEBUG
     tcp_debug_print_state(pcb->state);
@@ -1089,10 +1091,10 @@ tcp_input_backend(struct pbuf *p)
       }
     }
 
-    LOG_DEBUG("tcp_input: 6.3\n");
+    LOG_DEBUG("tcp_input_backend: 6.3\n");
     tcp_input_pcb = pcb;
     err = tcp_process(pcb);
-    LOG_DEBUG("tcp_input: 6.4\n");
+    LOG_DEBUG("tcp_input_backend: 6.4\n");
     /* A return value of ERR_ABRT means that tcp_abort() was called
        and that the pcb has been freed. If so, we don't do anything. */
     if (err != ERR_ABRT) {
@@ -1155,10 +1157,10 @@ tcp_input_backend(struct pbuf *p)
           }
 
           // recv handler
-          LOG_DEBUG("tcp_input: 6.5\n");
+          LOG_DEBUG("tcp_input_backend: 6.5\n");
           /* Notify application that data has been received. */
           TCP_EVENT_RECV(pcb, recv_data, ERR_OK, err);
-          LOG_DEBUG("tcp_input: 6.6\n");
+          LOG_DEBUG("tcp_input_backend: 6.6\n");
           if (err == ERR_ABRT) {
 #if TCP_QUEUE_OOSEQ && LWIP_WND_SCALE
             if (rest != NULL) {
@@ -1244,7 +1246,7 @@ aborted:
 
   LWIP_ASSERT("tcp_input: tcp_pcbs_sane()", tcp_pcbs_sane());
   PERF_STOP("tcp_input");
-  LOG_DEBUG("tcp_input: 7, end\n");
+  LOG_DEBUG("tcp_input_backend: 7, end\n");
   return;
 dropped:
   TCP_STATS_INC(tcp.drop);
