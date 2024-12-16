@@ -112,6 +112,7 @@
 #include "lwip/ip6_addr.h"
 #include "lwip/nd6.h"
 #include "lwip/logging.h"
+#include "lwip/tcp_ports.h"
 
 #include <string.h>
 
@@ -677,9 +678,9 @@ tcp_abort(struct tcp_pcb *pcb)
 err_t
 tcp_bind(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port)
 {
-  int i;
-  int max_pcb_list = NUM_TCP_PCB_LISTS;
-  struct tcp_pcb *cpcb;
+  // int i;
+  // int max_pcb_list = NUM_TCP_PCB_LISTS;
+  // struct tcp_pcb *cpcb;
 #if LWIP_IPV6 && LWIP_IPV6_SCOPES
   ip_addr_t zoned_ipaddr;
 #endif /* LWIP_IPV6 && LWIP_IPV6_SCOPES */
@@ -705,9 +706,9 @@ tcp_bind(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port)
      We do not dump TIME_WAIT pcb's; they can still be matched by incoming
      packets using both local and remote IP addresses and ports to distinguish.
    */
-  if (ip_get_option(pcb, SOF_REUSEADDR)) {
-    max_pcb_list = NUM_TCP_PCB_LISTS_NO_TIME_WAIT;
-  }
+  // if (ip_get_option(pcb, SOF_REUSEADDR)) {
+  //   max_pcb_list = NUM_TCP_PCB_LISTS_NO_TIME_WAIT;
+  // }
 #endif /* SO_REUSE */
 
 #if LWIP_IPV6 && LWIP_IPV6_SCOPES
@@ -728,29 +729,34 @@ tcp_bind(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port)
       return ERR_BUF;
     }
   } else {
+    
     /* Check if the address already is in use (on all lists) */
-    for (i = 0; i < max_pcb_list; i++) {
-      for (cpcb = *tcp_pcb_lists[i]; cpcb != NULL; cpcb = cpcb->next) {
-        if (cpcb->local_port == port) {
-#if SO_REUSE
-          /* Omit checking for the same port if both pcbs have REUSEADDR set.
-             For SO_REUSEADDR, the duplicate-check for a 5-tuple is done in
-             tcp_connect. */
-          if (!ip_get_option(pcb, SOF_REUSEADDR) ||
-              !ip_get_option(cpcb, SOF_REUSEADDR))
-#endif /* SO_REUSE */
-          {
-            /* @todo: check accept_any_ip_version */
-            if ((IP_IS_V6(ipaddr) == IP_IS_V6_VAL(cpcb->local_ip)) &&
-                (ip_addr_isany(&cpcb->local_ip) ||
-                 ip_addr_isany(ipaddr) ||
-                 ip_addr_cmp(&cpcb->local_ip, ipaddr))) {
-              return ERR_USE;
-            }
-          }
-        }
-      }
-    }
+//     for (i = 0; i < max_pcb_list; i++) {
+//       for (cpcb = *tcp_pcb_lists[i]; cpcb != NULL; cpcb = cpcb->next) {
+//         if (cpcb->local_port == port) {
+// #if SO_REUSE
+//           /* Omit checking for the same port if both pcbs have REUSEADDR set.
+//              For SO_REUSEADDR, the duplicate-check for a 5-tuple is done in
+//              tcp_connect. */
+//           if (!ip_get_option(pcb, SOF_REUSEADDR) ||
+//               !ip_get_option(cpcb, SOF_REUSEADDR))
+// #endif /* SO_REUSE */
+//           {
+//             /* @todo: check accept_any_ip_version */
+//             if ((IP_IS_V6(ipaddr) == IP_IS_V6_VAL(cpcb->local_ip)) &&
+//                 (ip_addr_isany(&cpcb->local_ip) ||
+//                  ip_addr_isany(ipaddr) ||
+//                  ip_addr_cmp(&cpcb->local_ip, ipaddr))) {
+//               return ERR_USE;
+//             }
+//           }
+//         }
+//       }
+//     } 
+    if  (tcp_port_check_used(port))
+        return ERR_USE;
+
+
   }
 
   if (!ip_addr_isany(ipaddr)
