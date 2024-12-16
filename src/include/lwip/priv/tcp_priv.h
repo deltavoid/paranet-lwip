@@ -336,10 +336,10 @@ union tcp_listen_pcbs_t { /* List of all TCP PCBs in LISTEN state. */
 };
 extern struct tcp_pcb *tcp_bound_pcbs;
 extern union tcp_listen_pcbs_t tcp_listen_pcbs;
-extern struct tcp_pcb *tcp_active_pcbs;  /* List of all TCP PCBs that are in a
+extern _Thread_local struct tcp_pcb *tcp_active_pcbs;  /* List of all TCP PCBs that are in a
               state in which they accept or send
               data. */
-extern struct tcp_pcb *tcp_tw_pcbs;      /* List of all TCP PCBs in TIME-WAIT. */
+extern _Thread_local struct tcp_pcb *tcp_tw_pcbs;      /* List of all TCP PCBs in TIME-WAIT. */
 extern struct tcp_pcb *tcp_before_estab_pcbs;
 
 

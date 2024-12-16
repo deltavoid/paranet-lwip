@@ -179,11 +179,11 @@ union tcp_listen_pcbs_t tcp_listen_pcbs;
 /** List of all TCP PCBs that are in a state in which
  * they accept or send data. */
 // todo, thread_local, SYN_SEND pcb may need special process.
- struct tcp_pcb *tcp_active_pcbs;
+_Thread_local struct tcp_pcb *tcp_active_pcbs;
 
 /** List of all TCP PCBs in TIME-WAIT state */
 // todo, thread_local 
-struct tcp_pcb *tcp_tw_pcbs;
+_Thread_local struct tcp_pcb *tcp_tw_pcbs;
 
 
 // Lists of PCBs before ESTABLISH state, e.g SYN_RECV, SYN_SENT, global list
