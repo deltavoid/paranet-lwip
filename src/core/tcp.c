@@ -195,7 +195,7 @@ u8_t tcp_active_pcbs_changed;
 /** Timer counter to handle calling slow-timer from tcp_tmr() */
 static u8_t tcp_timer;
 static u8_t tcp_timer_ctr;
-static u16_t tcp_new_port(void);
+// static u16_t tcp_new_port(void);
 
 static err_t tcp_close_shutdown_fin(struct tcp_pcb *pcb);
 #if LWIP_TCP_PCB_NUM_EXT_ARGS
@@ -724,7 +724,8 @@ tcp_bind(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port)
 #endif /* LWIP_IPV6 && LWIP_IPV6_SCOPES */
 
   if (port == 0) {
-    port = tcp_new_port();
+    // port = tcp_new_port();
+    port = tcp_port_get_new();
     if (port == 0) {
       return ERR_BUF;
     }
@@ -1034,32 +1035,32 @@ tcp_recved(struct tcp_pcb *pcb, u16_t len)
  *
  * @return a new (free) local TCP port number
  */
-static u16_t
-tcp_new_port(void)
-{
-  u8_t i;
-  u16_t n = 0;
-  struct tcp_pcb *pcb;
+// static u16_t
+// tcp_new_port(void)
+// {
+//   u8_t i;
+//   u16_t n = 0;
+//   struct tcp_pcb *pcb;
 
-again:
-  tcp_port++;
-  if (tcp_port == TCP_LOCAL_PORT_RANGE_END) {
-    tcp_port = TCP_LOCAL_PORT_RANGE_START;
-  }
-  /* Check all PCB lists. */
-  for (i = 0; i < NUM_TCP_PCB_LISTS; i++) {
-    for (pcb = *tcp_pcb_lists[i]; pcb != NULL; pcb = pcb->next) {
-      if (pcb->local_port == tcp_port) {
-        n++;
-        if (n > (TCP_LOCAL_PORT_RANGE_END - TCP_LOCAL_PORT_RANGE_START)) {
-          return 0;
-        }
-        goto again;
-      }
-    }
-  }
-  return tcp_port;
-}
+// again:
+//   tcp_port++;
+//   if (tcp_port == TCP_LOCAL_PORT_RANGE_END) {
+//     tcp_port = TCP_LOCAL_PORT_RANGE_START;
+//   }
+//   /* Check all PCB lists. */
+//   for (i = 0; i < NUM_TCP_PCB_LISTS; i++) {
+//     for (pcb = *tcp_pcb_lists[i]; pcb != NULL; pcb = pcb->next) {
+//       if (pcb->local_port == tcp_port) {
+//         n++;
+//         if (n > (TCP_LOCAL_PORT_RANGE_END - TCP_LOCAL_PORT_RANGE_START)) {
+//           return 0;
+//         }
+//         goto again;
+//       }
+//     }
+//   }
+//   return tcp_port;
+// }
 
 /**
  * @ingroup tcp_raw
@@ -1141,30 +1142,32 @@ tcp_connect(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port,
 
   old_local_port = pcb->local_port;
   if (pcb->local_port == 0) {
-    pcb->local_port = tcp_new_port();
+    // pcb->local_port = tcp_new_port();
+    pcb->local_port = tcp_port_get_new();
+
     if (pcb->local_port == 0) {
       return ERR_BUF;
     }
   } else {
 #if SO_REUSE
-    if (ip_get_option(pcb, SOF_REUSEADDR)) {
-      /* Since SOF_REUSEADDR allows reusing a local address, we have to make sure
-         now that the 5-tuple is unique. */
-      struct tcp_pcb *cpcb;
-      int i;
-      /* Don't check listen- and bound-PCBs, check active- and TIME-WAIT PCBs. */
-      for (i = 2; i < NUM_TCP_PCB_LISTS; i++) {
-        for (cpcb = *tcp_pcb_lists[i]; cpcb != NULL; cpcb = cpcb->next) {
-          if ((cpcb->local_port == pcb->local_port) &&
-              (cpcb->remote_port == port) &&
-              ip_addr_cmp(&cpcb->local_ip, &pcb->local_ip) &&
-              ip_addr_cmp(&cpcb->remote_ip, ipaddr)) {
-            /* linux returns EISCONN here, but ERR_USE should be OK for us */
-            return ERR_USE;
-          }
-        }
-      }
-    }
+    // if (ip_get_option(pcb, SOF_REUSEADDR)) {
+    //   /* Since SOF_REUSEADDR allows reusing a local address, we have to make sure
+    //      now that the 5-tuple is unique. */
+    //   struct tcp_pcb *cpcb;
+    //   int i;
+    //   /* Don't check listen- and bound-PCBs, check active- and TIME-WAIT PCBs. */
+    //   for (i = 2; i < NUM_TCP_PCB_LISTS; i++) {
+    //     for (cpcb = *tcp_pcb_lists[i]; cpcb != NULL; cpcb = cpcb->next) {
+    //       if ((cpcb->local_port == pcb->local_port) &&
+    //           (cpcb->remote_port == port) &&
+    //           ip_addr_cmp(&cpcb->local_ip, &pcb->local_ip) &&
+    //           ip_addr_cmp(&cpcb->remote_ip, ipaddr)) {
+    //         /* linux returns EISCONN here, but ERR_USE should be OK for us */
+    //         return ERR_USE;
+    //       }
+    //     }
+    //   }
+    // }
 #endif /* SO_REUSE */
   }
 
