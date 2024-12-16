@@ -186,9 +186,9 @@ union tcp_listen_pcbs_t tcp_listen_pcbs;
 struct tcp_pcb *tcp_tw_pcbs;
 
 /** An array with all (non-temporary) PCB lists, mainly used for smaller code size */
-_Thread_local struct tcp_pcb **const tcp_pcb_lists[] = {&tcp_listen_pcbs.pcbs, &tcp_bound_pcbs,
-         &tcp_active_pcbs, &tcp_tw_pcbs
-};
+// _Thread_local struct tcp_pcb **const tcp_pcb_lists[] = {&tcp_listen_pcbs.pcbs, &tcp_bound_pcbs,
+//          &tcp_active_pcbs, &tcp_tw_pcbs
+// };
 
 u8_t tcp_active_pcbs_changed;
 
