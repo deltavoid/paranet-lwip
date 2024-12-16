@@ -283,10 +283,15 @@ tcp_listen_closed(struct tcp_pcb *pcb)
   size_t i;
   LWIP_ASSERT("pcb != NULL", pcb != NULL);
   LWIP_ASSERT("pcb->state == LISTEN", pcb->state == LISTEN);
-  for (i = 1; i < LWIP_ARRAYSIZE(tcp_pcb_lists); i++) {
-    tcp_remove_listener(*tcp_pcb_lists[i], (struct tcp_pcb_listen *)pcb);
-  }
-#endif
+
+
+  // todo, remove from tcp_before_estab_pcbs
+  // for (i = 1; i < LWIP_ARRAYSIZE(tcp_pcb_lists); i++) {
+  //   tcp_remove_listener(*tcp_pcb_lists[i], (struct tcp_pcb_listen *)pcb);
+  // }
+
+
+  #endif
   LWIP_UNUSED_ARG(pcb);
 }
 
