@@ -258,7 +258,7 @@ tcp_tmr(void)
 /** Called when a listen pcb is closed. Iterates one pcb list and removes the
  * closed listener pcb from pcb->listener if matching.
  */
-static void
+/* static  */void
 tcp_remove_listener(struct tcp_pcb *list, struct tcp_pcb_listen *lpcb)
 {
   struct tcp_pcb *pcb;
@@ -280,7 +280,7 @@ static void
 tcp_listen_closed(struct tcp_pcb *pcb)
 {
 #if LWIP_CALLBACK_API || TCP_LISTEN_BACKLOG
-  size_t i;
+  // size_t i;
   LWIP_ASSERT("pcb != NULL", pcb != NULL);
   LWIP_ASSERT("pcb->state == LISTEN", pcb->state == LISTEN);
 
