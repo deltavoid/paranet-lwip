@@ -185,6 +185,10 @@ union tcp_listen_pcbs_t tcp_listen_pcbs;
 // todo, thread_local 
 struct tcp_pcb *tcp_tw_pcbs;
 
+
+// Lists of PCBs before ESTABLISH state, e.g SYN_RECV, SYN_SENT, global list
+struct tcp_pcb *tcp_before_estab_pcbs;
+
 /** An array with all (non-temporary) PCB lists, mainly used for smaller code size */
 // _Thread_local struct tcp_pcb **const tcp_pcb_lists[] = {&tcp_listen_pcbs.pcbs, &tcp_bound_pcbs,
 //          &tcp_active_pcbs, &tcp_tw_pcbs
