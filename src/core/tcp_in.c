@@ -726,9 +726,11 @@ tcp_input_frontend(struct pbuf *p, struct netif *inp)
       goto dropped;
   }
 
+  LOG_DEBUG("tcp_input_frontend: 2.1\n");
   wrapper->ip_data = ip_data;
   wrapper->p = p;
 
+  LOG_DEBUG("tcp_input_frontend: 2.2\n");
   // put pkt into ctx's ring
   int ret = rte_ring_enqueue(ctx->input_pkt_ring, wrapper);
   if  (ret != 0)
@@ -737,6 +739,7 @@ tcp_input_frontend(struct pbuf *p, struct netif *inp)
       goto dropped;
   }
 
+  LOG_DEBUG("tcp_input_frontend: 2.3\n");
   tcp_thread_input_ring_notify(ctx, 1);
 
 

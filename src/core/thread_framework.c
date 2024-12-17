@@ -97,6 +97,9 @@ int tcp_thread_init(struct tcp_thread_ctx* ctx, int id)
     int ret = 0;;
     ctx->id = id;
     ctx->running = true;
+    char ring_name[32];
+
+    LOG_DEBUG("tcp_thread_init: 1, begin, id: %d\n", id);
 
     ret = eventfd(0, 0);
     if  (ret < 0)
@@ -106,7 +109,8 @@ int tcp_thread_init(struct tcp_thread_ctx* ctx, int id)
     ctx->input_event_fd = ret;
 
     /* 2. 创建多生产者单消费者无锁队列 */
-    ctx->input_pkt_ring = rte_ring_create("MPSC_RING", TCP_THREAD_INPUT_RING_SIZE,
+    snprintf(ring_name, 32, "tcp_input_ring%d", id);
+    ctx->input_pkt_ring = rte_ring_create(ring_name, TCP_THREAD_INPUT_RING_SIZE,
             rte_socket_id(), RING_F_SC_DEQ);    /* 单消费者出队标志 */
     if  (ctx->input_pkt_ring == NULL)
     {   LOG_INFO("create input ring failed\n");
@@ -176,7 +180,7 @@ void thread_framework_init(int ip_thread_num, int tcp_thread_num)
     {
         int ret = tcp_thread_init(&tcp_thread_ctxs[i], i);
         if  (ret != 0)
-        {   LOG_INFO("tcp_thread_init");
+        {   LOG_INFO("tcp_thread_init failed\n");
         }
     }
 
