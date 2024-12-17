@@ -17,7 +17,7 @@
 
 #define OUTPUT_FILE stderr
 
-#define CURRENT_LOG_LEVEL LOG_LEVEL_DEBUG
+#define CURRENT_LOG_LEVEL LOG_LEVEL_INFO
 
 // #define ESC_START     "\033["
 // #define ESC_END       "\033[0m"
