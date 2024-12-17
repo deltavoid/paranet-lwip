@@ -939,39 +939,39 @@ tcp_input_backend(struct pbuf *p)
   }
 
   
-    LOG_DEBUG("tcp_input_backend: 4.2, check for tcp_before_estab_pcbs\n");
-    /*  */
-    for (pcb = tcp_before_estab_pcbs; pcb != NULL; pcb = pcb->next) {
-      // LWIP_ASSERT("tcp_input: TIME-WAIT pcb->state == TIME-WAIT", pcb->state == TIME_WAIT);
+//     LOG_DEBUG("tcp_input_backend: 4.2, check for tcp_before_estab_pcbs\n");
+//     /*  */
+//     for (pcb = tcp_before_estab_pcbs; pcb != NULL; pcb = pcb->next) {
+//       // LWIP_ASSERT("tcp_input: TIME-WAIT pcb->state == TIME-WAIT", pcb->state == TIME_WAIT);
 
-      /* check if PCB is bound to specific netif */
-      if ((pcb->netif_idx != NETIF_NO_INDEX) &&
-          (pcb->netif_idx != netif_get_index(ip_data.current_input_netif))) {
-        continue;
-      }
+//       /* check if PCB is bound to specific netif */
+//       if ((pcb->netif_idx != NETIF_NO_INDEX) &&
+//           (pcb->netif_idx != netif_get_index(ip_data.current_input_netif))) {
+//         continue;
+//       }
 
-      if (pcb->remote_port == tcphdr->src &&
-          pcb->local_port == tcphdr->dest &&
-          ip_addr_cmp(&pcb->remote_ip, ip_current_src_addr()) &&
-          ip_addr_cmp(&pcb->local_ip, ip_current_dest_addr())) {
-        /* We don't really care enough to move this PCB to the front
-           of the list since we are not very likely to receive that
-           many segments for connections in TIME-WAIT. */
-        LWIP_DEBUGF(TCP_INPUT_DEBUG, ("tcp_input: packed for before ESTABLISH connection.\n"));
-// a
-        {
-          // timewait process, should pass packet.
-          LOG_DEBUG("tcp_input_backend: 4.2, process for before establish conns\n");
-          // tcp_timewait_input(pcb);
-          // process as usual active conns
-          break;
-        }
-        // pbuf_free(p);
+//       if (pcb->remote_port == tcphdr->src &&
+//           pcb->local_port == tcphdr->dest &&
+//           ip_addr_cmp(&pcb->remote_ip, ip_current_src_addr()) &&
+//           ip_addr_cmp(&pcb->local_ip, ip_current_dest_addr())) {
+//         /* We don't really care enough to move this PCB to the front
+//            of the list since we are not very likely to receive that
+//            many segments for connections in TIME-WAIT. */
+//         LWIP_DEBUGF(TCP_INPUT_DEBUG, ("tcp_input: packed for before ESTABLISH connection.\n"));
+// // a
+//         {
+//           // timewait process, should pass packet.
+//           LOG_DEBUG("tcp_input_backend: 4.2, process for before establish conns\n");
+//           // tcp_timewait_input(pcb);
+//           // process as usual active conns
+//           break;
+//         }
+//         // pbuf_free(p);
         
-        // LOG_DEBUG("tcp_input_backend: 4.3, end from tcp_timewait_input\n");
-        // return;
-      }
-    }
+//         // LOG_DEBUG("tcp_input_backend: 4.3, end from tcp_timewait_input\n");
+//         // return;
+//       }
+//     }
 
 
 
