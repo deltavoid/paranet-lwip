@@ -1424,7 +1424,9 @@ tcp_listen_input(struct tcp_pcb_listen *pcb)
     npcb->netif_idx = pcb->netif_idx;
     /* Register the new PCB so that we can begin receiving segments
        for it. */
-    TCP_REG_ACTIVE(npcb);
+    // TCP_REG_ACTIVE(npcb);
+    LOG_DEBUG("tcp_listen_input: 4, insert pcb into tcp_before_estab_pcbs\n");
+    TCP_REG(&tcp_before_estab_pcbs, npcb);
 
     /* Parse any options in the SYN. */
     tcp_parseopt(npcb);
@@ -1453,7 +1455,7 @@ tcp_listen_input(struct tcp_pcb_listen *pcb)
     tcp_output(npcb);
   }
 
-  LOG_DEBUG("tcp_listen_input: 2, end\n");
+  LOG_DEBUG("tcp_listen_input: 5, end\n");
   return;
 }
 
@@ -1669,7 +1671,15 @@ tcp_process(struct tcp_pcb *pcb)
       if (flags & TCP_ACK) {
         /* expected ACK number? */
         if (TCP_SEQ_BETWEEN(ackno, pcb->lastack + 1, pcb->snd_nxt)) {
+          
+          LOG_DEBUG("tcp_process: 2.2, case SYN_RCVD, rm pcb from tcp_before_estab_pcbs\n");
+          TCP_RMV(&tcp_before_estab_pcbs, pcb);
+          
           pcb->state = ESTABLISHED;
+          LOG_DEBUG("tcp_process: 2.2, case SYN_RCVD, insert pcb into tcp_active_pcbs\n");
+          TCP_REG_ACTIVE(pcb);
+
+
           LWIP_DEBUGF(TCP_DEBUG, ("TCP connection established %"U16_F" -> %"U16_F".\n", 
                 tcp_in_var.inseg.tcphdr->src, tcp_in_var.inseg.tcphdr->dest));
 #if LWIP_CALLBACK_API || TCP_LISTEN_BACKLOG
