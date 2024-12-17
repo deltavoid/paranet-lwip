@@ -1609,6 +1609,9 @@ tcp_process(struct tcp_pcb *pcb)
         pcb->snd_wnd_max = pcb->snd_wnd;
         pcb->snd_wl1 = seqno - 1; /* initialise to seqno - 1 to force window update */
         pcb->state = ESTABLISHED;
+        LOG_DEBUG("tcp_process: 2.1, case SYN_SENT, mv pcb from tcp_before_estab_pcbs to tcp_active_pcbs\n");
+        TCP_RMV(&tcp_before_estab_pcbs, pcb);
+        TCP_REG_ACTIVE(pcb);
 
 #if TCP_CALCULATE_EFF_SEND_MSS
         pcb->mss = tcp_eff_send_mss(pcb->mss, &pcb->local_ip, &pcb->remote_ip);
@@ -1644,6 +1647,7 @@ tcp_process(struct tcp_pcb *pcb)
 
         /* Call the user specified function to call when successfully
          * connected. */
+        LOG_DEBUG("tcp_process: 2.1, case SYN_SENT, call connected event\n");
         TCP_EVENT_CONNECTED(pcb, ERR_OK, err);
         if (err == ERR_ABRT) {
           return ERR_ABRT;

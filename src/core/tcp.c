@@ -1104,6 +1104,8 @@ tcp_connect(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port,
   u32_t iss;
   u16_t old_local_port;
 
+  LOG_DEBUG("tcp_connect: 1, begin\n");
+
   LWIP_ASSERT_CORE_LOCKED();
 
   LWIP_ERROR("tcp_connect: invalid pcb", pcb != NULL, return ERR_ARG);
@@ -1126,6 +1128,7 @@ tcp_connect(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port,
     return ERR_RTE;
   }
 
+  LOG_DEBUG("tcp_connect: 2\n");
   /* check if local IP has been assigned to pcb, if not, get one */
   if (ip_addr_isany(&pcb->local_ip)) {
     const ip_addr_t *local_ip = ip_netif_get_local_ip(netif, ipaddr);
@@ -1144,10 +1147,12 @@ tcp_connect(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port,
   }
 #endif /* LWIP_IPV6 && LWIP_IPV6_SCOPES */
 
+  LOG_DEBUG("tcp_connect: 3\n");
   old_local_port = pcb->local_port;
   if (pcb->local_port == 0) {
     // pcb->local_port = tcp_new_port();
     pcb->local_port = tcp_port_get_new();
+    LOG_DEBUG("tcp_connect: 4, pcb->local_port: %d\n", pcb->local_port);
 
     if (pcb->local_port == 0) {
       return ERR_BUF;
@@ -1175,6 +1180,7 @@ tcp_connect(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port,
 #endif /* SO_REUSE */
   }
 
+  LOG_DEBUG("tcp_connect: 5\n");
   iss = tcp_next_iss(pcb);
   pcb->rcv_nxt = 0;
   pcb->snd_nxt = iss;
@@ -1199,19 +1205,26 @@ tcp_connect(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port,
   LWIP_UNUSED_ARG(connected);
 #endif /* LWIP_CALLBACK_API */
 
+LOG_DEBUG("tcp_connect: 6\n");
   /* Send a SYN together with the MSS option. */
   ret = tcp_enqueue_flags(pcb, TCP_SYN);
   if (ret == ERR_OK) {
+
+    LOG_DEBUG("tcp_connect: 7\n");
     /* SYN segment was enqueued, changed the pcbs state now */
     pcb->state = SYN_SENT;
     if (old_local_port != 0) {
       TCP_RMV(&tcp_bound_pcbs, pcb);
     }
-    TCP_REG_ACTIVE(pcb);
+    // TCP_REG_ACTIVE(pcb);
+    TCP_REG(&tcp_before_estab_pcbs, pcb);
     MIB2_STATS_INC(mib2.tcpactiveopens);
 
+    LOG_DEBUG("tcp_connect: 8\n");
     tcp_output(pcb);
   }
+
+  LOG_DEBUG("tcp_connect: 9, end\n");
   return ret;
 }
 

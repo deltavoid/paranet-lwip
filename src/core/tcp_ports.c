@@ -6,10 +6,12 @@
 #include "lwip/tcp_ports.h"
 
 
+u16_t cur_port = 10000;
 
 u16_t tcp_port_get_new()
 {
-    return 0;
+    // just for test now, not Complete
+    return cur_port++;
 }
 
 bool tcp_port_check_used(u16_t port)
