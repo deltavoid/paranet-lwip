@@ -661,6 +661,11 @@ static void tcp_remove_sacks_gt(struct tcp_pcb *pcb, u32_t seq);
  */
 
 
+static inline u16_t tcp_packet_hash(u16_t a, u16_t b)
+{
+  return (a >> 8) * 3 ^ (a >> 1) * 5  ^  (b >> 8) * 7 ^ (b & 0xff ) * 11;
+}
+
 void
 tcp_input_frontend(struct pbuf *p, struct netif *inp)
 {
@@ -715,7 +720,8 @@ tcp_input_frontend(struct pbuf *p, struct netif *inp)
 
   
   // calculate hash code and put pkt into tcp input_pkt_ring
-  int hash_code = (tcphdr->src ^ tcphdr->dest) % g_tcp_thread_num;
+  // int hash_code = (tcphdr->src ^ tcphdr->dest) % g_tcp_thread_num;
+  int hash_code = tcp_packet_hash(tcphdr->src,  tcphdr->dest) % g_tcp_thread_num;
   struct tcp_thread_ctx* ctx = get_tcp_thread_ctx_by_id(hash_code);
   LOG_DEBUG("tcp_input_frontend: 2, ctx id: %d\n", ctx->id);
 
