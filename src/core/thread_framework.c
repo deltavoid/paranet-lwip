@@ -20,6 +20,7 @@
 #include "lwip/pbuf.h"
 #include "lwip/prot/tcp.h"
 #include "lwip/def.h"
+#include "lwip/timeouts.h"
 
 
 // tcp_thread class ----------------------------
@@ -75,6 +76,9 @@ void* tcp_thread_run(void* arg)
                 break;
             }
         }
+
+        //todo, need to use epoll, and need to handle global lists
+        sys_check_timeouts();
 
         tx_flush();
 
