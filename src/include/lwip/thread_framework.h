@@ -58,7 +58,7 @@ static inline struct tcp_thread_ctx* get_tcp_thread_ctx_by_id(int id)
     return &tcp_thread_ctxs[id];
 }
 
-void thread_framework_init(int ip_thread_num, int tcp_thread_num);
+void thread_framework_init(int ip_thread_num, int tcp_thread_num, struct netif* nif);
 
 
 

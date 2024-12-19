@@ -139,23 +139,56 @@ void tcp_thread_destroy(struct tcp_thread_ctx* ctx)
 
 
 // ip thread class ---------------------------
-struct ip_thread_cb {
+struct ip_thread_ctx {
+    pthread_t pthread_ctx;
+    struct netif* _netif;
     int id;
+    volatile int running;
 
+    
     // todo, pkt input entry.
 
 };
 
-void ip_thread_run()
+void* ip_thread_run(void* arg)
 {
+    struct ip_thread_ctx* ctx = (struct ip_thread_ctx*)arg;
     // death loop  poll pkt only wait process exit
+
+    while (ctx->running)
+    {
+        // todo, read packets;
+
+        LOG_DEBUG("ip_thread_run: 2\n");
+
+        sleep(1);
+
+    }
     
 
     // ret = rte_ring_enqueue(g_ring, obj);
 
+    return NULL;
 }
 
-// todo, thread eventloop, base on epoll and eventfd.
+int ip_thread_init(struct ip_thread_ctx* ctx, int id, struct netif* nif)
+{
+    int ret = 0;
+
+    ctx->id = id;
+    ctx->running = true;
+    ctx->_netif = nif;
+
+        // create pthread
+    ret = pthread_create(&ctx->pthread_ctx, NULL, ip_thread_run, ctx);
+    if  (ret != 0)
+    {   perror("pthread create failed\n");
+        return ret;
+    }
+
+
+    return 0;
+}
 
 
 // thread framework object -------------------------
@@ -163,6 +196,7 @@ void ip_thread_run()
 
 
 struct tcp_thread_ctx tcp_thread_ctxs[TCP_THREAD_MAX_NUM];
+struct ip_thread_ctx ip_thread_ctxs[IP_THREAD_MAX_NUM];
 int g_tcp_thread_num, g_ip_thread_num; // global variable, init at process initialization, and should not be changed after that.
 
 // todo, tcp_thread_cb list, ip_thread_cb_list
@@ -170,7 +204,7 @@ int g_tcp_thread_num, g_ip_thread_num; // global variable, init at process initi
 
 
 
-void thread_framework_init(int ip_thread_num, int tcp_thread_num)
+void thread_framework_init(int ip_thread_num, int tcp_thread_num, struct netif* nif)
 {
     LOG_DEBUG("thread_framework_init: 1, ip_thread_num: %d, tcp_thread_num: %d\n",
         ip_thread_num, tcp_thread_num);
@@ -186,6 +220,13 @@ void thread_framework_init(int ip_thread_num, int tcp_thread_num)
         }
     }
 
+    for (int i = 0;i < ip_thread_num; i++)
+    {
+        int ret = ip_thread_init(&ip_thread_ctxs[i], i, nif);
+        if  (ret != 0)
+        {   LOG_INFO("ip_thread_init failed\n");
+        }
+    }
 
 //     for (int i = 0; i < 10; i++)
 //     {
