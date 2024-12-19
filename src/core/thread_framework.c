@@ -45,7 +45,7 @@ void* tcp_thread_run(void* arg)
         {   perror("read eventfd error");
             break;
         }
-        // LOG_INFO("tcp_thread_run: 3, ctx_id: %d, get val: %ld\n", ctx->id, val);
+        LOG_INFO("tcp_thread_run: 3, ctx_id: %d, get val: %ld\n", ctx->id, val);
 
         for (uint64_t i = 0; i < val; i++)
         {
