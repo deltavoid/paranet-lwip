@@ -46,7 +46,7 @@ void* tcp_thread_run(void* arg)
         {   perror("read eventfd error");
             break;
         }
-        LOG_INFO("tcp_thread_run: 3, ctx_id: %d, get val: %ld\n", ctx->id, val);
+        LOG_DEBUG("tcp_thread_run: 3, ctx_id: %d, get val: %ld\n", ctx->id, val);
 
         for (uint64_t i = 0; i < val; i++)
         {
@@ -153,6 +153,23 @@ struct ip_thread_ctx {
     // todo, pkt input entry.
 
 };
+
+// int process_one_pkt(struct rte_mbuf* mbuf)
+// {
+
+//     LOG_DEBUG("main: 7.4\n");
+// 	struct pbuf *p;
+// 	assert((p = pbuf_alloc(PBUF_RAW, rte_pktmbuf_pkt_len(rx_mbufs[i]), PBUF_POOL)) != NULL);
+
+// 	LOG_DEBUG("main: 7.5\n");
+// 	pbuf_take(p, rte_pktmbuf_mtod(rx_mbufs[i], void *), rte_pktmbuf_pkt_len(rx_mbufs[i]));
+					
+// 	LOG_DEBUG("main: 7.6\n");
+// 	p->len = p->tot_len = rte_pktmbuf_pkt_len(rx_mbufs[i]);
+// 	assert(_netif.input(p, &_netif) == ERR_OK);
+
+//     return 0;
+// }
 
 void* ip_thread_run(void* arg)
 {
