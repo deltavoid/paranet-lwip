@@ -179,7 +179,7 @@ void* ip_thread_run(void* arg)
 
 
         // sleep(1);
-        if  (++cnt % 1000 == 0)
+        if  (++cnt % 10000 == 0)
         {
             // usleep(1);
             LOG_INFO("ip_thread_run: 3: nb_rx: %d\n", nb_rx);
