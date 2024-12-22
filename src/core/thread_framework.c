@@ -154,22 +154,8 @@ struct ip_thread_ctx {
 
 };
 
-// int process_one_pkt(struct rte_mbuf* mbuf)
-// {
 
-//     LOG_DEBUG("main: 7.4\n");
-// 	struct pbuf *p;
-// 	assert((p = pbuf_alloc(PBUF_RAW, rte_pktmbuf_pkt_len(rx_mbufs[i]), PBUF_POOL)) != NULL);
-
-// 	LOG_DEBUG("main: 7.5\n");
-// 	pbuf_take(p, rte_pktmbuf_mtod(rx_mbufs[i], void *), rte_pktmbuf_pkt_len(rx_mbufs[i]));
-					
-// 	LOG_DEBUG("main: 7.6\n");
-// 	p->len = p->tot_len = rte_pktmbuf_pkt_len(rx_mbufs[i]);
-// 	assert(_netif.input(p, &_netif) == ERR_OK);
-
-//     return 0;
-// }
+unsigned short netif_poll_once(struct netif* _netif_p, int queue_id);
 
 void* ip_thread_run(void* arg)
 {
@@ -182,7 +168,12 @@ void* ip_thread_run(void* arg)
 
         LOG_DEBUG("ip_thread_run: 2\n");
 
-        sleep(1);
+        netif_poll_once(ctx->_netif, ctx->id);
+
+        tx_flush();
+
+        // sleep(1);
+        usleep(1);
 
     }
     
