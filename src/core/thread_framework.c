@@ -169,12 +169,12 @@ void* ip_thread_run(void* arg)
 
         LOG_DEBUG("ip_thread_run: 2\n");
 
-        unsigned short nb_rx = netif_poll_once(ctx->_netif, ctx->id);
+        /* unsigned short nb_rx =  */netif_poll_once(ctx->_netif, ctx->id);
 
         tx_flush();
 
 
-        netif_rx_test_sleep(nb_rx, ctx->id);
+        // netif_rx_test_sleep(nb_rx, ctx->id);
 
 
         // sleep(1);
