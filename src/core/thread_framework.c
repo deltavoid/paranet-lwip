@@ -161,6 +161,7 @@ void netif_rx_test_sleep(unsigned short nb_rx, uint16_t queue_id);
 void* ip_thread_run(void* arg)
 {
     struct ip_thread_ctx* ctx = (struct ip_thread_ctx*)arg;
+    uint64_t cnt = 0;
     // death loop  poll pkt only wait process exit
 
     while (ctx->running)
@@ -169,7 +170,7 @@ void* ip_thread_run(void* arg)
 
         LOG_DEBUG("ip_thread_run: 2\n");
 
-        /* unsigned short nb_rx =  */netif_poll_once(ctx->_netif, ctx->id);
+        unsigned short nb_rx = netif_poll_once(ctx->_netif, ctx->id);
 
         tx_flush();
 
@@ -178,7 +179,12 @@ void* ip_thread_run(void* arg)
 
 
         // sleep(1);
-        usleep(1);
+        if  (++cnt % 1000 == 0)
+        {
+            // usleep(1);
+            LOG_INFO("ip_thread_run: 3: nb_rx: %d\n", nb_rx);
+        }
+            
 
     }
     
