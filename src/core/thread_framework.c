@@ -25,6 +25,14 @@
 
 // tcp_thread class ----------------------------
 
+static inline uint64_t get_now () 
+{
+    return ({ 
+        struct timespec ts; 
+        clock_gettime(CLOCK_REALTIME, &ts); 
+        (ts.tv_sec * 1000000000UL + ts.tv_nsec); 
+    });
+}
 
 void tcp_input_backend(struct pbuf *p);
 void tx_flush(void);
@@ -33,6 +41,8 @@ void* tcp_thread_run(void* arg)
 {
     struct tcp_thread_ctx* ctx = (struct tcp_thread_ctx*)arg;
     // int cnt = 0;
+    uint64_t pkt_cnt = 0;
+    uint64_t prev_ts = 0;
 
     // todo, eventloop, while(epoll) { process event}
     // at first stage, just use eventfd as entry.
@@ -47,6 +57,7 @@ void* tcp_thread_run(void* arg)
             break;
         }
         LOG_DEBUG("tcp_thread_run: 3, ctx_id: %d, get val: %ld\n", ctx->id, val);
+        pkt_cnt += val;
 
         for (uint64_t i = 0; i < val; i++)
         {
@@ -82,6 +93,13 @@ void* tcp_thread_run(void* arg)
 
         tx_flush();
 
+        uint64_t now = get_now();
+        if (now - prev_ts > 1000000000UL)
+        {
+
+            LOG_INFO("tcp_thread_run: 3: ctx_id: %d, pkt_cnt: %lu\n", ctx->id, pkt_cnt);
+            prev_ts = now;
+        }
 
         // sleep(1);        
     }
@@ -158,14 +176,7 @@ struct ip_thread_ctx {
 unsigned short netif_poll_once(struct netif* _netif_p, int queue_id);
 void netif_rx_test_sleep(unsigned short nb_rx, uint16_t queue_id);
 
-static inline uint64_t get_now () 
-{
-    return ({ 
-        struct timespec ts; 
-        clock_gettime(CLOCK_REALTIME, &ts); 
-        (ts.tv_sec * 1000000000UL + ts.tv_nsec); 
-    });
-}
+
 
 void* ip_thread_run(void* arg)
 {
