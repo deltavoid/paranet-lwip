@@ -161,7 +161,7 @@ static const char *const tcp_state_str[] = {
 static u16_t tcp_port = TCP_LOCAL_PORT_RANGE_START;
 
 /* Incremented every coarse grained timer shot (typically every 500 ms). */
-u32_t tcp_ticks;
+_Thread_local u32_t tcp_ticks;
 static const u8_t tcp_backoff[13] =
 { 1, 2, 3, 4, 5, 6, 7, 7, 7, 7, 7, 7, 7};
 /* Times per slowtmr hits */
@@ -194,11 +194,11 @@ struct tcp_pcb *tcp_before_estab_pcbs;
 //          &tcp_active_pcbs, &tcp_tw_pcbs
 // };
 
-u8_t tcp_active_pcbs_changed;
+_Thread_local u8_t tcp_active_pcbs_changed;
 
 /** Timer counter to handle calling slow-timer from tcp_tmr() */
-static u8_t tcp_timer;
-static u8_t tcp_timer_ctr;
+static _Thread_local u8_t tcp_timer;
+static _Thread_local u8_t tcp_timer_ctr;
 // static u16_t tcp_new_port(void);
 
 static err_t tcp_close_shutdown_fin(struct tcp_pcb *pcb);

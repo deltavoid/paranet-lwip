@@ -134,7 +134,7 @@ sys_timeouts_get_next_timeout(void)
 
 #if LWIP_TCP
 /** global variable that shows if the tcp timer is currently scheduled or not */
-static int tcpip_tcp_timer_active;
+static _Thread_local int tcpip_tcp_timer_active;
 
 /**
  * Timer callback function that calls tcp_tmr() and reschedules itself.

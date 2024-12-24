@@ -326,8 +326,8 @@ struct tcp_seg {
 
 /* Global variables: */
 extern _Thread_local struct tcp_pcb *tcp_input_pcb;
-extern u32_t tcp_ticks;
-extern u8_t tcp_active_pcbs_changed;
+extern _Thread_local u32_t tcp_ticks;
+extern _Thread_local u8_t tcp_active_pcbs_changed;
 
 /* The TCP PCB lists. */
 union tcp_listen_pcbs_t { /* List of all TCP PCBs in LISTEN state. */
