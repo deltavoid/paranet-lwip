@@ -184,7 +184,8 @@ void netif_rx_test_sleep(unsigned short nb_rx, uint16_t queue_id);
 
 
 
-void* ip_thread_run(void* arg)
+int 
+/* void*  */ip_thread_run(void* arg)
 {
     struct ip_thread_ctx* ctx = (struct ip_thread_ctx*)arg;
     uint64_t cnt = 0;
@@ -224,7 +225,8 @@ void* ip_thread_run(void* arg)
 
     // ret = rte_ring_enqueue(g_ring, obj);
 
-    return NULL;
+    // return NULL;
+    return 0;
 }
 
 int ip_thread_init(struct ip_thread_ctx* ctx, int id, struct netif* nif)
@@ -236,12 +238,12 @@ int ip_thread_init(struct ip_thread_ctx* ctx, int id, struct netif* nif)
     ctx->_netif = nif;
 
         // create pthread
-    ret = pthread_create(&ctx->pthread_ctx, NULL, ip_thread_run, ctx);
+    // ret = pthread_create(&ctx->pthread_ctx, NULL, ip_thread_run, ctx);
+    ret = rte_eal_remote_launch(ip_thread_run, ctx, 1 + ctx->id);
     if  (ret != 0)
     {   perror("pthread create failed\n");
         return ret;
     }
-
 
     return 0;
 }
@@ -265,6 +267,10 @@ void thread_framework_init(int ip_thread_num, int tcp_thread_num, struct netif* 
     LOG_DEBUG("thread_framework_init: 1, ip_thread_num: %d, tcp_thread_num: %d\n",
         ip_thread_num, tcp_thread_num);
     
+    // LWIP_UNUSED_ARG(ip_thread_num);
+    // LWIP_UNUSED_ARG(nif);
+
+    
     g_ip_thread_num = ip_thread_num;
     g_tcp_thread_num = tcp_thread_num;
 
@@ -276,7 +282,7 @@ void thread_framework_init(int ip_thread_num, int tcp_thread_num, struct netif* 
         }
     }
 
-    for (int i = 0;i < ip_thread_num; i++)
+    for (int i = 0; i < ip_thread_num; i++)
     {
         int ret = ip_thread_init(&ip_thread_ctxs[i], i, nif);
         if  (ret != 0)
