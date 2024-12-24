@@ -85,6 +85,7 @@
 #endif
 
 #include <string.h>
+#include <rte_mbuf.h>
 
 #define SIZEOF_STRUCT_PBUF        LWIP_MEM_ALIGN_SIZE(sizeof(struct pbuf))
 /* Since the pool is created in memp, PBUF_POOL_BUFSIZE will be automatically
@@ -295,6 +296,7 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
       LWIP_ASSERT("pbuf_alloc: erroneous type", 0);
       return NULL;
   }
+  p->related_rte_mbuf = NULL;
   LWIP_DEBUGF(PBUF_DEBUG | LWIP_DBG_TRACE, ("pbuf_alloc(length=%"U16_F") == %p\n", length, (void *)p));
   return p;
 }
@@ -738,6 +740,12 @@ pbuf_free(struct pbuf *p)
   LWIP_DEBUGF(PBUF_DEBUG | LWIP_DBG_TRACE, ("pbuf_free(%p)\n", (void *)p));
 
   PERF_START;
+
+  if  (p->related_rte_mbuf)
+  {
+    rte_pktmbuf_free(p->related_rte_mbuf);
+    p->related_rte_mbuf = NULL;
+  }
 
   count = 0;
   /* de-allocate all consecutive pbufs from the head of the chain that
