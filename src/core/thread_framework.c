@@ -97,7 +97,8 @@ void* tcp_thread_run(void* arg)
         if (now - prev_ts > 1000000000UL)
         {
 
-            LOG_INFO("tcp_thread_run: 3: ctx_id: %d, pkt_cnt: %lu\n", ctx->id, pkt_cnt);
+            LOG_INFO("tcp_thread_run: 3: ctx_id: %d, pkt_cnt: %lu, input_ring num: %d\n", 
+                    ctx->id, pkt_cnt, rte_ring_count(ctx->input_pkt_ring));
             prev_ts = now;
         }
 
@@ -116,6 +117,9 @@ void tcp_thread_input_ring_notify(struct tcp_thread_ctx* ctx, uint64_t val)
 
 }
 
+extern _Thread_local int thread_tx_queue_id; // default 0, tcp thread set it to sepcific id;
+
+
 int tcp_thread_init(struct tcp_thread_ctx* ctx, int id)
 {
     int ret = 0;;
@@ -124,6 +128,8 @@ int tcp_thread_init(struct tcp_thread_ctx* ctx, int id)
     char ring_name[32];
 
     LOG_DEBUG("tcp_thread_init: 1, begin, id: %d\n", id);
+
+    thread_tx_queue_id = 1 + ctx->id;
 
     ret = eventfd(0, 0);
     if  (ret < 0)
@@ -190,7 +196,7 @@ void* ip_thread_run(void* arg)
     {
         // todo, read packets;
 
-        LOG_DEBUG("ip_thread_run: 2\n");
+        // LOG_DEBUG("ip_thread_run: 2\n");
 
         unsigned short nb_rx = netif_poll_once(ctx->_netif, ctx->id);
         pkt_cnt += nb_rx;
