@@ -20,7 +20,7 @@ struct tcp_thread_input_pkt_wrapper {
     struct pbuf *p;
 };
 
-#define TCP_THREAD_INPUT_RING_SIZE 128
+#define TCP_THREAD_INPUT_RING_SIZE 512
 
 struct tcp_thread_ctx {
 
