@@ -83,6 +83,7 @@
 #if LWIP_CHECKSUM_ON_COPY
 #include "lwip/inet_chksum.h"
 #endif
+#include "lwip/logging.h"
 
 #include <string.h>
 #include <rte_malloc.h>
@@ -301,6 +302,27 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
   }
   LWIP_DEBUGF(PBUF_DEBUG | LWIP_DBG_TRACE, ("pbuf_alloc(length=%"U16_F") == %p\n", length, (void *)p));
   return p;
+}
+
+struct pbuf *
+pbuf_alloc_from_rte_malloc(u16_t length)
+{
+    LOG_DEBUG("pbuf_alloc_from_rte_malloc: 1, begin, length: %d\n", length);
+    struct pbuf* p = rte_malloc(NULL, sizeof(struct pbuf) + length, RTE_CACHE_LINE_SIZE);
+    if  (!p)
+        return NULL;
+
+    // memset(p, 0, sizeof(*p));
+    p->related_mbuf = NULL;
+    p->type_internal = PBUF_TYPE_ALLOC_SRC_FROM_RTE_MALLOC;
+    p->flags = 0;
+    p->payload = (void*)(p + 1);
+    p->ref = 1;
+    p->if_idx = NETIF_NO_INDEX;
+    p->len = p->tot_len = length;
+
+    LOG_DEBUG("pbuf_alloc_from_rte_malloc: 2, end, ret: 0x%0lx\n", (long)p);
+    return p;
 }
 
 /**
@@ -691,6 +713,16 @@ pbuf_free_header(struct pbuf *q, u16_t size)
   return p;
 }
 
+
+u8_t
+pbuf_free_from_rte_malloc(struct pbuf *p)
+{
+    LOG_DEBUG("pbuf_free_from_rte_malloc: p: 0x%0lx\n", (long)p);
+    rte_free(p);
+
+    return 0;
+}
+
 u8_t
 pbuf_free_from_rte_mbuf(struct pbuf *p)
 {
@@ -754,7 +786,9 @@ pbuf_free(struct pbuf *p)
   }
   LWIP_DEBUGF(PBUF_DEBUG | LWIP_DBG_TRACE, ("pbuf_free(%p)\n", (void *)p));
 
-  if  (p->type_internal == PBUF_TYPE_ALLOC_SRC_FROM_RTE_MBUF)
+  if  (p->type_internal == PBUF_TYPE_ALLOC_SRC_FROM_RTE_MALLOC)
+      return pbuf_free_from_rte_malloc(p);
+  else if  (p->type_internal == PBUF_TYPE_ALLOC_SRC_FROM_RTE_MBUF)
       return pbuf_free_from_rte_mbuf(p);
 
   PERF_START;

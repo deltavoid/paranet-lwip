@@ -135,7 +135,9 @@ typedef enum {
 #define PBUF_TYPE_ALLOC_SRC_MASK_STD_MEMP_PBUF_POOL 0x02
 /** First pbuf allocation type for applications */
 #define PBUF_TYPE_ALLOC_SRC_MASK_APP_MIN            0x03
-#define PBUF_TYPE_ALLOC_SRC_FROM_RTE_MBUF           0x04
+#define PBUF_TYPE_ALLOC_SRC_FROM_RTE_MALLOC         0x04
+#define PBUF_TYPE_ALLOC_SRC_FROM_RTE_MBUF           0x05
+
 /** Last pbuf allocation type for applications */
 #define PBUF_TYPE_ALLOC_SRC_MASK_APP_MAX            PBUF_TYPE_ALLOC_SRC_MASK
 
@@ -276,6 +278,7 @@ void pbuf_free_ooseq(void);
 #define pbuf_init()
 
 struct pbuf *pbuf_alloc(pbuf_layer l, u16_t length, pbuf_type type);
+struct pbuf *pbuf_alloc_from_rte_malloc(u16_t length);
 struct pbuf *pbuf_alloc_reference(void *payload, u16_t length, pbuf_type type);
 #if LWIP_SUPPORT_CUSTOM_PBUF
 struct pbuf *pbuf_alloced_custom(pbuf_layer l, u16_t length, pbuf_type type,
