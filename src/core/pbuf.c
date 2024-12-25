@@ -85,6 +85,10 @@
 #endif
 
 #include <string.h>
+#include <rte_malloc.h>
+#include <rte_memory.h>
+#include <rte_mempool.h>
+#include <rte_mbuf.h>
 
 #define SIZEOF_STRUCT_PBUF        LWIP_MEM_ALIGN_SIZE(sizeof(struct pbuf))
 /* Since the pool is created in memp, PBUF_POOL_BUFSIZE will be automatically
@@ -687,6 +691,19 @@ pbuf_free_header(struct pbuf *q, u16_t size)
   return p;
 }
 
+u8_t
+pbuf_free_from_rte_mbuf(struct pbuf *p)
+{
+    assert(p->type_internal == PBUF_TYPE_ALLOC_SRC_FROM_RTE_MBUF);
+    
+    if  (p->related_mbuf)
+        rte_pktmbuf_free(p->related_mbuf);
+      
+    rte_free(p);
+
+    return 0;
+}
+
 /**
  * @ingroup pbuf
  * Dereference a pbuf chain or queue and deallocate any no-longer-used
@@ -736,6 +753,9 @@ pbuf_free(struct pbuf *p)
     return 0;
   }
   LWIP_DEBUGF(PBUF_DEBUG | LWIP_DBG_TRACE, ("pbuf_free(%p)\n", (void *)p));
+
+  if  (p->type_internal == PBUF_TYPE_ALLOC_SRC_FROM_RTE_MBUF)
+      return pbuf_free_from_rte_mbuf(p);
 
   PERF_START;
 

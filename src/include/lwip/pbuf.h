@@ -135,6 +135,7 @@ typedef enum {
 #define PBUF_TYPE_ALLOC_SRC_MASK_STD_MEMP_PBUF_POOL 0x02
 /** First pbuf allocation type for applications */
 #define PBUF_TYPE_ALLOC_SRC_MASK_APP_MIN            0x03
+#define PBUF_TYPE_ALLOC_SRC_FROM_RTE_MBUF           0x04
 /** Last pbuf allocation type for applications */
 #define PBUF_TYPE_ALLOC_SRC_MASK_APP_MAX            PBUF_TYPE_ALLOC_SRC_MASK
 
@@ -189,6 +190,8 @@ struct pbuf {
 
   /** pointer to the actual data in the buffer */
   void *payload;
+
+  struct rte_mbuf* related_mbuf;
 
   /**
    * total length of this buffer and all next buffers in chain
