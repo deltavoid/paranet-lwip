@@ -37,7 +37,7 @@ static inline uint64_t get_now ()
 void tcp_input_backend(struct pbuf *p);
 void tx_flush(void);
 
-void* tcp_thread_run(void* arg)
+/* void*  */ int tcp_thread_run(void* arg)
 {
     struct tcp_thread_ctx* ctx = (struct tcp_thread_ctx*)arg;
     // int cnt = 0;
@@ -105,7 +105,8 @@ void* tcp_thread_run(void* arg)
         // sleep(1);        
     }
 
-    return NULL;
+    // return NULL;
+    return 0;
 }
 
 void tcp_thread_input_ring_notify(struct tcp_thread_ctx* ctx, uint64_t val)
@@ -120,7 +121,7 @@ void tcp_thread_input_ring_notify(struct tcp_thread_ctx* ctx, uint64_t val)
 extern _Thread_local int thread_tx_queue_id; // default 0, tcp thread set it to sepcific id;
 
 
-int tcp_thread_init(struct tcp_thread_ctx* ctx, int id)
+int tcp_thread_init(struct tcp_thread_ctx* ctx, int id, int core_id)
 {
     int ret = 0;;
     ctx->id = id;
@@ -149,7 +150,8 @@ int tcp_thread_init(struct tcp_thread_ctx* ctx, int id)
 
 
     // create pthread
-    ret = pthread_create(&ctx->pthread_ctx, NULL, tcp_thread_run, ctx);
+    // ret = pthread_create(&ctx->pthread_ctx, NULL, tcp_thread_run, ctx);
+    ret = rte_eal_remote_launch(tcp_thread_run, ctx, core_id);
     if  (ret != 0)
     {   perror("pthread create failed\n");
         return ret;
@@ -276,7 +278,7 @@ void thread_framework_init(int ip_thread_num, int tcp_thread_num, struct netif* 
 
     for (int i = 0; i < tcp_thread_num; i++)
     {
-        int ret = tcp_thread_init(&tcp_thread_ctxs[i], i);
+        int ret = tcp_thread_init(&tcp_thread_ctxs[i], i, 1 + g_ip_thread_num + i);
         if  (ret != 0)
         {   LOG_INFO("tcp_thread_init failed\n");
         }
