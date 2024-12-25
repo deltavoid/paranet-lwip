@@ -502,54 +502,70 @@ pbuf_add_header_impl(struct pbuf *p, size_t header_size_increment, u8_t force)
   void *payload;
   u16_t increment_magnitude;
 
+  LOG_DEBUG("pbuf_add_header_impl: 1, begin\n");
+
   LWIP_ASSERT("p != NULL", p != NULL);
   if ((p == NULL) || (header_size_increment > 0xFFFF)) {
+    LOG_DEBUG("pbuf_add_header_impl: 2\n");
     return 1;
   }
   if (header_size_increment == 0) {
+    LOG_DEBUG("pbuf_add_header_impl: 3\n");
     return 0;
   }
 
+  LOG_DEBUG("pbuf_add_header_impl: 4\n");
   increment_magnitude = (u16_t)header_size_increment;
   /* Do not allow tot_len to wrap as a result. */
   if ((u16_t)(increment_magnitude + p->tot_len) < increment_magnitude) {
+    LOG_DEBUG("pbuf_add_header_impl: 5\n");
     return 1;
   }
 
+  LOG_DEBUG("pbuf_add_header_impl: 6\n");
   type_internal = p->type_internal;
 
+  LOG_DEBUG("pbuf_add_header_impl: 7\n");
   /* pbuf types containing payloads? */
   if (type_internal & PBUF_TYPE_FLAG_STRUCT_DATA_CONTIGUOUS) {
     /* set new payload pointer */
     payload = (u8_t *)p->payload - header_size_increment;
     /* boundary check fails? */
+    LOG_DEBUG("pbuf_add_header_impl: 8, SIZEOF_STRUCT_PBU F: %ld, sizeof(pbuf): %ld\n",
+            SIZEOF_STRUCT_PBUF, sizeof(struct pbuf));
     if ((u8_t *)payload < (u8_t *)p + SIZEOF_STRUCT_PBUF) {
       LWIP_DEBUGF( PBUF_DEBUG | LWIP_DBG_TRACE,
                    ("pbuf_add_header: failed as %p < %p (not enough space for new header size)\n",
                     (void *)payload, (void *)((u8_t *)p + SIZEOF_STRUCT_PBUF)));
+      LOG_DEBUG("pbuf_add_header_impl: 9\n");
       /* bail out unsuccessfully */
       return 1;
     }
     /* pbuf types referring to external payloads? */
   } else {
+    LOG_DEBUG("pbuf_add_header_impl: 10\n");
     /* hide a header in the payload? */
     if (force) {
+      LOG_DEBUG("pbuf_add_header_impl: 11\n");
       payload = (u8_t *)p->payload - header_size_increment;
     } else {
+      LOG_DEBUG("pbuf_add_header_impl: 12\n");
       /* cannot expand payload to front (yet!)
        * bail out unsuccessfully */
       return 1;
     }
   }
+  LOG_DEBUG("pbuf_add_header_impl: 13\n");
   LWIP_DEBUGF(PBUF_DEBUG | LWIP_DBG_TRACE, ("pbuf_add_header: old %p new %p (%"U16_F")\n",
               (void *)p->payload, (void *)payload, increment_magnitude));
 
+  LOG_DEBUG("pbuf_add_header_impl: 14\n");
   /* modify pbuf fields */
   p->payload = payload;
   p->len = (u16_t)(p->len + increment_magnitude);
   p->tot_len = (u16_t)(p->tot_len + increment_magnitude);
 
-
+  LOG_DEBUG("pbuf_add_header_impl: 15, end\n");
   return 0;
 }
 
