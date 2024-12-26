@@ -245,7 +245,8 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
       rem_len = length;
       do {
         u16_t qlen;
-        q = (struct pbuf *)memp_malloc(MEMP_PBUF_POOL);
+        // q = (struct pbuf *)memp_malloc(MEMP_PBUF_POOL);
+        q = (struct pbuf *)rte_malloc(NULL, SIZEOF_STRUCT_PBUF + PBUF_POOL_BUFSIZE_ALIGNED, 0);
         if (q == NULL) {
           PBUF_POOL_IS_EMPTY();
           /* free chain so far allocated */
@@ -859,7 +860,8 @@ pbuf_free(struct pbuf *p)
       {
         /* is this a pbuf from the pool? */
         if (alloc_src == PBUF_TYPE_ALLOC_SRC_MASK_STD_MEMP_PBUF_POOL) {
-          memp_free(MEMP_PBUF_POOL, p);
+          // memp_free(MEMP_PBUF_POOL, p);
+          rte_free(p);
           /* is this a ROM or RAM referencing pbuf? */
         } else if (alloc_src == PBUF_TYPE_ALLOC_SRC_MASK_STD_MEMP_PBUF) {
           memp_free(MEMP_PBUF, p);
