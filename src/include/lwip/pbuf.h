@@ -135,8 +135,8 @@ typedef enum {
 #define PBUF_TYPE_ALLOC_SRC_MASK_STD_MEMP_PBUF_POOL 0x02
 /** First pbuf allocation type for applications */
 #define PBUF_TYPE_ALLOC_SRC_MASK_APP_MIN            0x03
-#define PBUF_TYPE_ALLOC_SRC_FROM_RTE_MALLOC         0x04
-#define PBUF_TYPE_ALLOC_SRC_FROM_RTE_MBUF           0x05
+#define PBUF_TYPE_ALLOC_SRC_MASK_RTE_MALLOC         0x04
+#define PBUF_TYPE_ALLOC_SRC_MASK_RTE_MBUF           0x05
 
 /** Last pbuf allocation type for applications */
 #define PBUF_TYPE_ALLOC_SRC_MASK_APP_MAX            PBUF_TYPE_ALLOC_SRC_MASK
@@ -167,7 +167,9 @@ typedef enum {
       the first payload byte can be calculated from struct pbuf).
       Don't use this for TX, if the pool becomes empty e.g. because of TCP queuing,
       you are unable to receive TCP acks! */
-  PBUF_POOL = (PBUF_ALLOC_FLAG_RX | PBUF_TYPE_FLAG_STRUCT_DATA_CONTIGUOUS | PBUF_TYPE_ALLOC_SRC_MASK_STD_MEMP_PBUF_POOL)
+  PBUF_POOL = (PBUF_ALLOC_FLAG_RX | PBUF_TYPE_FLAG_STRUCT_DATA_CONTIGUOUS | PBUF_TYPE_ALLOC_SRC_MASK_STD_MEMP_PBUF_POOL),
+
+  PBUF_RTE_MALLOC = (PBUF_TYPE_FLAG_STRUCT_DATA_CONTIGUOUS | PBUF_TYPE_ALLOC_SRC_MASK_RTE_MALLOC)
 } pbuf_type;
 
 

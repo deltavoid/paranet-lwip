@@ -245,8 +245,8 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
       rem_len = length;
       do {
         u16_t qlen;
-        // q = (struct pbuf *)memp_malloc(MEMP_PBUF_POOL);
-        q = (struct pbuf *)rte_malloc(NULL, SIZEOF_STRUCT_PBUF + PBUF_POOL_BUFSIZE_ALIGNED, 0);
+        q = (struct pbuf *)memp_malloc(MEMP_PBUF_POOL);
+        // q = (struct pbuf *)rte_malloc(NULL, SIZEOF_STRUCT_PBUF + PBUF_POOL_BUFSIZE_ALIGNED, 0);
         if (q == NULL) {
           PBUF_POOL_IS_EMPTY();
           /* free chain so far allocated */
@@ -299,6 +299,30 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
                   ((mem_ptr_t)p->payload % MEM_ALIGNMENT) == 0);
       break;
     }
+
+    case PBUF_RTE_MALLOC: {
+      mem_size_t payload_len = (mem_size_t)(LWIP_MEM_ALIGN_SIZE(offset) + LWIP_MEM_ALIGN_SIZE(length));
+      mem_size_t alloc_len = (mem_size_t)(LWIP_MEM_ALIGN_SIZE(SIZEOF_STRUCT_PBUF) + payload_len);
+
+      /* bug #50040: Check for integer overflow when calculating alloc_len */
+      if ((payload_len < LWIP_MEM_ALIGN_SIZE(length)) ||
+          (alloc_len < LWIP_MEM_ALIGN_SIZE(length))) {
+        return NULL;
+      }
+
+      /* If pbuf is to be allocated in RAM, allocate memory for it. */
+      // p = (struct pbuf *)mem_malloc(alloc_len);
+      // change to use rte_malloc instead default heap mem_malloc
+      p = (struct pbuf *)rte_malloc(NULL, alloc_len, 0);
+      if (p == NULL) {
+        return NULL;
+      }
+      pbuf_init_alloced_pbuf(p, LWIP_MEM_ALIGN((void *)((u8_t *)p + SIZEOF_STRUCT_PBUF + offset)),
+                             length, length, type, 0);
+      LWIP_ASSERT("pbuf_alloc: pbuf->payload properly aligned",
+                  ((mem_ptr_t)p->payload % MEM_ALIGNMENT) == 0);
+      break;
+    }
     default:
       LWIP_ASSERT("pbuf_alloc: erroneous type", 0);
       return NULL;
@@ -319,26 +343,26 @@ void pbuf_display(struct pbuf* p)
     LOG_DEBUG("type_internal: 0x%x, flag: 0x%x\n", p->type_internal, p->flags);
 }
 
-struct pbuf *
-pbuf_alloc_from_rte_malloc(u16_t length)
-{
-    LOG_DEBUG("pbuf_alloc_from_rte_malloc: 1, begin, length: %d\n", length);
-    struct pbuf* p = rte_malloc(NULL, sizeof(struct pbuf) + length, RTE_CACHE_LINE_SIZE);
-    if  (!p)
-        return NULL;
+// struct pbuf *
+// pbuf_alloc_from_rte_malloc(u16_t length)
+// {
+//     LOG_DEBUG("pbuf_alloc_from_rte_malloc: 1, begin, length: %d\n", length);
+//     struct pbuf* p = rte_malloc(NULL, sizeof(struct pbuf) + length, RTE_CACHE_LINE_SIZE);
+//     if  (!p)
+//         return NULL;
 
-    // memset(p, 0, sizeof(*p));
-    p->related_mbuf = NULL;
-    p->type_internal = PBUF_TYPE_ALLOC_SRC_FROM_RTE_MALLOC;
-    p->flags = 0;
-    p->payload = (void*)(p + 1);
-    p->ref = 1;
-    p->if_idx = NETIF_NO_INDEX;
-    p->len = p->tot_len = length;
+//     // memset(p, 0, sizeof(*p));
+//     p->related_mbuf = NULL;
+//     p->type_internal = PBUF_TYPE_ALLOC_SRC_FROM_RTE_MALLOC;
+//     p->flags = 0;
+//     p->payload = (void*)(p + 1);
+//     p->ref = 1;
+//     p->if_idx = NETIF_NO_INDEX;
+//     p->len = p->tot_len = length;
 
-    LOG_DEBUG("pbuf_alloc_from_rte_malloc: 2, end, ret: 0x%0lx\n", (long)p);
-    return p;
-}
+//     LOG_DEBUG("pbuf_alloc_from_rte_malloc: 2, end, ret: 0x%0lx\n", (long)p);
+//     return p;
+// }
 
 /**
  * @ingroup pbuf
@@ -758,18 +782,18 @@ pbuf_free_from_rte_malloc(struct pbuf *p)
     return 0;
 }
 
-u8_t
-pbuf_free_from_rte_mbuf(struct pbuf *p)
-{
-    assert(p->type_internal == PBUF_TYPE_ALLOC_SRC_FROM_RTE_MBUF);
+// u8_t
+// pbuf_free_from_rte_mbuf(struct pbuf *p)
+// {
+//     assert(p->type_internal == PBUF_TYPE_ALLOC_SRC_FROM_RTE_MBUF);
     
-    if  (p->related_mbuf)
-        rte_pktmbuf_free(p->related_mbuf);
+//     if  (p->related_mbuf)
+//         rte_pktmbuf_free(p->related_mbuf);
       
-    rte_free(p);
+//     rte_free(p);
 
-    return 0;
-}
+//     return 0;
+// }
 
 /**
  * @ingroup pbuf
@@ -821,10 +845,10 @@ pbuf_free(struct pbuf *p)
   }
   LWIP_DEBUGF(PBUF_DEBUG | LWIP_DBG_TRACE, ("pbuf_free(%p)\n", (void *)p));
 
-  if  (p->type_internal == PBUF_TYPE_ALLOC_SRC_FROM_RTE_MALLOC)
-      return pbuf_free_from_rte_malloc(p);
-  else if  (p->type_internal == PBUF_TYPE_ALLOC_SRC_FROM_RTE_MBUF)
-      return pbuf_free_from_rte_mbuf(p);
+  // if  (p->type_internal == PBUF_TYPE_ALLOC_SRC_FROM_RTE_MALLOC)
+  //     return pbuf_free_from_rte_malloc(p);
+  // else if  (p->type_internal == PBUF_TYPE_ALLOC_SRC_FROM_RTE_MBUF)
+  //     return pbuf_free_from_rte_mbuf(p);
 
   PERF_START;
 
@@ -860,16 +884,22 @@ pbuf_free(struct pbuf *p)
       {
         /* is this a pbuf from the pool? */
         if (alloc_src == PBUF_TYPE_ALLOC_SRC_MASK_STD_MEMP_PBUF_POOL) {
-          // memp_free(MEMP_PBUF_POOL, p);
-          rte_free(p);
+          memp_free(MEMP_PBUF_POOL, p);
+          // rte_free(p);
           /* is this a ROM or RAM referencing pbuf? */
         } else if (alloc_src == PBUF_TYPE_ALLOC_SRC_MASK_STD_MEMP_PBUF) {
           memp_free(MEMP_PBUF, p);
           /* type == PBUF_RAM */
         } else if (alloc_src == PBUF_TYPE_ALLOC_SRC_MASK_STD_HEAP) {
           // mem_free(p);
+          // LOG_INFO("PBUF_TYPE_ALLOC_SRC_MASK_STD_HEAP\n");
           rte_free(p);
-        } else {
+        } 
+        else if  (alloc_src == PBUF_TYPE_ALLOC_SRC_MASK_RTE_MALLOC) {
+          // LOG_INFO("PBUF_TYPE_ALLOC_SRC_MASK_RTE_MALLOC\n");
+          rte_free(p);
+        }
+        else {
           /* @todo: support freeing other types */
           LWIP_ASSERT("invalid pbuf type", 0);
         }
