@@ -277,6 +277,7 @@ void pbuf_free_ooseq(void);
 /* Initializes the pbuf module. This call is empty for now, but may not be in future. */
 #define pbuf_init()
 
+void pbuf_display(struct pbuf* p);
 struct pbuf *pbuf_alloc(pbuf_layer l, u16_t length, pbuf_type type);
 struct pbuf *pbuf_alloc_from_rte_malloc(u16_t length);
 struct pbuf *pbuf_alloc_reference(void *payload, u16_t length, pbuf_type type);

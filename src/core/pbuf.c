@@ -304,6 +304,14 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
   return p;
 }
 
+void pbuf_display(struct pbuf* p)
+{
+    LOG_DEBUG("pbuf_display, p: 0x%0lx\n", (long)p);
+    LOG_DEBUG("next: 0x%0lx, payload: 0x%0lx\n", (long)p->next, (long)p->payload);
+    LOG_DEBUG("len: %d, tot_len: %d, ref: %d, if_idx: %d\n", p->len, p->tot_len, p->ref, p->if_idx);
+    LOG_DEBUG("type_internal: 0x%x, flag: 0x%x\n", p->type_internal, p->flags);
+}
+
 struct pbuf *
 pbuf_alloc_from_rte_malloc(u16_t length)
 {
@@ -526,6 +534,10 @@ pbuf_add_header_impl(struct pbuf *p, size_t header_size_increment, u8_t force)
   type_internal = p->type_internal;
 
   LOG_DEBUG("pbuf_add_header_impl: 7\n");
+
+      LOG_DEBUG("pbuf_add_header_impl: 7, SIZEOF_STRUCT_PBU F: %ld, sizeof(pbuf): %ld\n",
+            SIZEOF_STRUCT_PBUF, sizeof(struct pbuf));
+
   /* pbuf types containing payloads? */
   if (type_internal & PBUF_TYPE_FLAG_STRUCT_DATA_CONTIGUOUS) {
     /* set new payload pointer */

@@ -274,12 +274,15 @@ tcp_pbuf_prealloc(pbuf_layer layer, u16_t length, u16_t max_length,
     }
   }
 #endif /* LWIP_NETIF_TX_SINGLE_PBUF */
-  // p = pbuf_alloc(layer, alloc, PBUF_RAM);
-  LWIP_UNUSED_ARG(layer);
-  p = pbuf_alloc_from_rte_malloc(alloc);
+  
+p = pbuf_alloc(layer, alloc, PBUF_RAM);
+  // LWIP_UNUSED_ARG(layer);
+  // p = pbuf_alloc_from_rte_malloc(alloc);
   if (p == NULL) {
     return NULL;
   }
+  pbuf_display(p);
+  
   LWIP_ASSERT("need unchained pbuf", p->next == NULL);
   *oversize = p->len - length;
   /* trim p->len to the currently used size */
@@ -536,6 +539,8 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
     LWIP_ASSERT("inconsistent oversize vs. len", (oversize == 0) || (pos == len));
 #endif /* TCP_OVERSIZE */
 
+  LOG_DEBUG("tcp_write: 7\n");
+
 #if !LWIP_NETIF_TX_SINGLE_PBUF
     /*
      * Phase 2: Chain a new pbuf to the end of pcb->unsent.
@@ -552,7 +557,7 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
      * it after rexmit puts a segment from unacked to unsent and at this point,
      * oversize info is lost.
      */
-    LOG_DEBUG("tcp_write: 7\n");
+    LOG_DEBUG("tcp_write: 7.1\n");
     if ((pos < len) && (space > 0) && (last_unsent->len > 0)) {
       u16_t seglen = LWIP_MIN(space, len - pos);
       seg = last_unsent;
