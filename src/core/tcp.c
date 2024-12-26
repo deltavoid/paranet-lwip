@@ -115,6 +115,7 @@
 #include "lwip/tcp_ports.h"
 
 #include <string.h>
+#include <rte_malloc.h>
 
 #ifdef LWIP_HOOK_FILENAME
 #include LWIP_HOOK_FILENAME
@@ -1676,7 +1677,8 @@ tcp_seg_free(struct tcp_seg *seg)
       seg->p = NULL;
 #endif /* TCP_DEBUG */
     }
-    memp_free(MEMP_TCP_SEG, seg);
+    // memp_free(MEMP_TCP_SEG, seg);
+    rte_free(seg);
   }
 }
 
@@ -1712,7 +1714,8 @@ tcp_seg_copy(struct tcp_seg *seg)
 
   LWIP_ASSERT("tcp_seg_copy: invalid seg", seg != NULL);
 
-  cseg = (struct tcp_seg *)memp_malloc(MEMP_TCP_SEG);
+  // cseg = (struct tcp_seg *)memp_malloc(MEMP_TCP_SEG);
+  cseg = (struct tcp_seg *)rte_malloc(NULL, sizeof(struct tcp_seg), 0);
   if (cseg == NULL) {
     return NULL;
   }

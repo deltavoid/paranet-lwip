@@ -80,6 +80,7 @@
 #include "lwip/logging.h"
 
 #include <string.h>
+#include <rte_malloc.h>
 
 #ifdef LWIP_HOOK_FILENAME
 #include LWIP_HOOK_FILENAME
@@ -169,7 +170,9 @@ tcp_create_segment(const struct tcp_pcb *pcb, struct pbuf *p, u8_t hdrflags, u32
   optlen = LWIP_TCP_OPT_LENGTH_SEGMENT(optflags, pcb);
 
     LOG_DEBUG("tcp_create_segment: 2\n");
-  if ((seg = (struct tcp_seg *)memp_malloc(MEMP_TCP_SEG)) == NULL) {
+    // seg = (struct tcp_seg *)memp_malloc(MEMP_TCP_SEG);
+    seg = (struct tcp_seg *)rte_malloc(NULL, sizeof(struct tcp_seg), 0);
+  if ((seg) == NULL) {
     LWIP_DEBUGF(TCP_OUTPUT_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("tcp_create_segment: no memory.\n"));
       LOG_DEBUG("tcp_create_segment: 3\n");
     pbuf_free(p);
@@ -282,7 +285,7 @@ p = pbuf_alloc(layer, alloc, PBUF_RAM);
     return NULL;
   }
   pbuf_display(p);
-  
+
   LWIP_ASSERT("need unchained pbuf", p->next == NULL);
   *oversize = p->len - length;
   /* trim p->len to the currently used size */
@@ -573,6 +576,8 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
           LWIP_DEBUGF(TCP_OUTPUT_DEBUG | LWIP_DBG_LEVEL_SERIOUS,
                       ("tcp_write : could not allocate memory for pbuf copy size %"U16_F"\n",
                        seglen));
+          
+          LOG_INFO("tcp_write: 9.1\n");
           goto memerr;
         }
 #if TCP_OVERSIZE_DBGCHECK
@@ -599,7 +604,7 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
           LOG_DEBUG("tcp_write: 12\n");
           if ((concat_p = pbuf_alloc(PBUF_RAW, seglen, PBUF_ROM)) == NULL) {
             
-            LOG_DEBUG("tcp_write: 13\n");
+            LOG_INFO("tcp_write: 13\n");
             LWIP_DEBUGF(TCP_OUTPUT_DEBUG | LWIP_DBG_LEVEL_SERIOUS,
                         ("tcp_write: could not allocate memory for zero-copy pbuf\n"));
             goto memerr;
@@ -657,7 +662,7 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
       LOG_DEBUG("tcp_write: 19\n");
       if ((p = tcp_pbuf_prealloc(PBUF_TRANSPORT, seglen + optlen, mss_local, &oversize, pcb, apiflags, queue == NULL)) == NULL) {
 
-        LOG_DEBUG("tcp_write: 20\n");
+        LOG_INFO("tcp_write: 20\n");
         LWIP_DEBUGF(TCP_OUTPUT_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("tcp_write : could not allocate memory for pbuf copy size %"U16_F"\n", seglen));
         goto memerr;
       }
@@ -676,7 +681,7 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
       LWIP_ASSERT("oversize == 0", oversize == 0);
 #endif /* TCP_OVERSIZE */
       if ((p2 = pbuf_alloc(PBUF_TRANSPORT, seglen, PBUF_ROM)) == NULL) {
-        LOG_DEBUG("tcp_write: 22\n");
+        LOG_INFO("tcp_write: 22\n");
         LWIP_DEBUGF(TCP_OUTPUT_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("tcp_write: could not allocate memory for zero-copy pbuf\n"));
         goto memerr;
       }
@@ -696,7 +701,7 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
       if ((p = pbuf_alloc(PBUF_TRANSPORT, optlen, PBUF_RAM)) == NULL) {
         /* If allocation fails, we have to deallocate the data pbuf as
          * well. */
-        LOG_DEBUG("tcp_write: 24\n");
+        LOG_INFO("tcp_write: 24\n");
         pbuf_free(p2);
         LWIP_DEBUGF(TCP_OUTPUT_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("tcp_write: could not allocate memory for header pbuf\n"));
         goto memerr;
@@ -716,14 +721,14 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
     if (queuelen > LWIP_MIN(TCP_SND_QUEUELEN, TCP_SNDQUEUELEN_OVERFLOW)) {
       LWIP_DEBUGF(TCP_OUTPUT_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("tcp_write: queue too long %"U16_F" (%d)\n",
                   queuelen, (int)TCP_SND_QUEUELEN));
-      LOG_DEBUG("tcp_write: 27\n");
+      LOG_INFO("tcp_write: 27\n");
       pbuf_free(p);
       goto memerr;
     }
 
     LOG_DEBUG("tcp_write: 28\n");
     if ((seg = tcp_create_segment(pcb, p, 0, pcb->snd_lbb + pos, optflags)) == NULL) {
-      LOG_DEBUG("tcp_write: 29\n");
+      LOG_INFO("tcp_write: 29\n");
       goto memerr;
     }
 #if TCP_OVERSIZE_DBGCHECK
@@ -875,7 +880,7 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
   LOG_DEBUG("tcp_write: 49, end ok\n");
   return ERR_OK;
 memerr:
-  LOG_DEBUG("tcp_write: 50\n");
+  LOG_INFO("tcp_write: 50\n");
   tcp_set_flags(pcb, TF_NAGLEMEMERR);
   TCP_STATS_INC(tcp.memerr);
 
