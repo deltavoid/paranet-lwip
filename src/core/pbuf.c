@@ -286,7 +286,9 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
       }
 
       /* If pbuf is to be allocated in RAM, allocate memory for it. */
-      p = (struct pbuf *)mem_malloc(alloc_len);
+      // p = (struct pbuf *)mem_malloc(alloc_len);
+      // change to use rte_malloc instead default heap mem_malloc
+      p = (struct pbuf *)rte_malloc(NULL, alloc_len, 0);
       if (p == NULL) {
         return NULL;
       }
@@ -859,7 +861,8 @@ pbuf_free(struct pbuf *p)
           memp_free(MEMP_PBUF, p);
           /* type == PBUF_RAM */
         } else if (alloc_src == PBUF_TYPE_ALLOC_SRC_MASK_STD_HEAP) {
-          mem_free(p);
+          // mem_free(p);
+          rte_free(p);
         } else {
           /* @todo: support freeing other types */
           LWIP_ASSERT("invalid pbuf type", 0);
