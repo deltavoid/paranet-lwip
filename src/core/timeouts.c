@@ -120,7 +120,7 @@ const int lwip_num_cyclic_timers = LWIP_ARRAYSIZE(lwip_cyclic_timers);
 #if LWIP_TIMERS && !LWIP_TIMERS_CUSTOM
 
 /** The one and only timeout list */
-static struct sys_timeo *next_timeout;
+static _Thread_local struct sys_timeo *next_timeout;
 
 static u32_t current_timeout_due_time;
 
