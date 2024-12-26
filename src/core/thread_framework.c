@@ -231,7 +231,7 @@ int
     return 0;
 }
 
-int ip_thread_init(struct ip_thread_ctx* ctx, int id, struct netif* nif)
+int ip_thread_init(struct ip_thread_ctx* ctx, int id, int core_id, struct netif* nif)
 {
     int ret = 0;
 
@@ -241,7 +241,7 @@ int ip_thread_init(struct ip_thread_ctx* ctx, int id, struct netif* nif)
 
         // create pthread
     // ret = pthread_create(&ctx->pthread_ctx, NULL, ip_thread_run, ctx);
-    ret = rte_eal_remote_launch(ip_thread_run, ctx, 1 + ctx->id);
+    ret = rte_eal_remote_launch(ip_thread_run, ctx, core_id);
     if  (ret != 0)
     {   perror("pthread create failed\n");
         return ret;
@@ -286,7 +286,7 @@ void thread_framework_init(int ip_thread_num, int tcp_thread_num, struct netif* 
 
     for (int i = 0; i < ip_thread_num; i++)
     {
-        int ret = ip_thread_init(&ip_thread_ctxs[i], i, nif);
+        int ret = ip_thread_init(&ip_thread_ctxs[i], i, 1 + i, nif);
         if  (ret != 0)
         {   LOG_INFO("ip_thread_init failed\n");
         }
