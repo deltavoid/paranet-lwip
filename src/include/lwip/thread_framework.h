@@ -25,11 +25,11 @@ struct tcp_thread_input_pkt_wrapper {
 struct tcp_thread_ctx {
 
     pthread_t pthread_ctx;
-
+    struct rte_ring* input_pkt_ring;
     int id;
     volatile int running;
     int input_event_fd;
-    struct rte_ring* input_pkt_ring;
+    int loop_state;
 
 
 

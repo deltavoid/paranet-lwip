@@ -46,10 +46,12 @@ void tx_flush(void);
 
     // todo, eventloop, while(epoll) { process event}
     // at first stage, just use eventfd as entry.
+    ctx->loop_state = 1;
 
     while (ctx->running)
     {
         LOG_DEBUG("tcp_thread_run: 2, id: %d\n", ctx->id);
+        ctx->loop_state = 2;
 
         uint64_t val = 0;
         if  (read(ctx->input_event_fd, &val, sizeof(val)) != sizeof(val))
@@ -59,9 +61,11 @@ void tx_flush(void);
         LOG_DEBUG("tcp_thread_run: 3, ctx_id: %d, get val: %ld\n", ctx->id, val);
         pkt_cnt += val;
 
+        ctx->loop_state = 3;
         for (uint64_t i = 0; i < val; i++)
         {
             void* obj_ptr;
+            ctx->loop_state = 4;
             if (rte_ring_dequeue(ctx->input_pkt_ring, &obj_ptr) == 0)
             {
                 // get object
@@ -77,8 +81,10 @@ void tx_flush(void);
                 ip_data = wrapper->ip_data;
                 rte_free(wrapper);
 
+                ctx->loop_state = 5;
                 tcp_input_backend(p);
                 // pbuf_free(p);
+                ctx->loop_state = 6;
 
             }
             else
@@ -88,11 +94,14 @@ void tx_flush(void);
             }
         }
 
+        ctx->loop_state = 7;
         //todo, need to use epoll, and need to handle global lists
         sys_check_timeouts();
 
+        ctx->loop_state = 8;
         tx_flush();
 
+        ctx->loop_state = 9;
         uint64_t now = get_now();
         if (now - prev_ts > 1000000000UL)
         {
@@ -101,6 +110,8 @@ void tx_flush(void);
                     ctx->id, pkt_cnt, rte_ring_count(ctx->input_pkt_ring));
             prev_ts = now;
         }
+
+        ctx->loop_state = 10;
 
         // sleep(1);        
     }
