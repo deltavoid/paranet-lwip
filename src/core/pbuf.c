@@ -308,6 +308,10 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
 
 void pbuf_display(struct pbuf* p)
 {
+#if CURRENT_LOG_LEVEL > LOG_LEVEL_DEBUG
+    LWIP_UNUSED_ARG(p);
+#endif
+
     LOG_DEBUG("pbuf_display, p: 0x%0lx\n", (long)p);
     LOG_DEBUG("next: 0x%0lx, payload: 0x%0lx\n", (long)p->next, (long)p->payload);
     LOG_DEBUG("len: %d, tot_len: %d, ref: %d, if_idx: %d\n", p->len, p->tot_len, p->ref, p->if_idx);
