@@ -31,15 +31,12 @@ struct tcp_thread_ctx {
     int input_event_fd;
     int loop_state;
 
-
-
-    // todo, dpdk ring for tcp pkt in process
-
-    // todo, tcp thread pkt output queue
-
 };
 
 void tcp_thread_input_ring_notify(struct tcp_thread_ctx* ctx, uint64_t val);
+
+extern _Thread_local volatile int thread_tx_queue_id; // default 0, tcp thread set it to sepcific id;
+
 
 // thread framework -------------------
 
@@ -57,6 +54,8 @@ static inline struct tcp_thread_ctx* get_tcp_thread_ctx_by_id(int id)
     if  (!(id >= 0 && id < g_tcp_thread_num)) return NULL;
     return &tcp_thread_ctxs[id];
 }
+
+// todo, get_tcp_thread_ctx_default() // by thread_tx_queue_id;
 
 void thread_framework_init(int ip_thread_num, int tcp_thread_num, struct netif* nif);
 

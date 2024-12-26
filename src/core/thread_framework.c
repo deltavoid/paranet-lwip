@@ -125,16 +125,13 @@ _Thread_local volatile int thread_tx_queue_id = 0; // default 0, tcp thread set 
     return 0;
 }
 
-void tcp_thread_input_ring_notify(struct tcp_thread_ctx* ctx, uint64_t val)
+void tcp_thread_input_ring_notify(struct tcp_thread_ctx *ctx, uint64_t val)
 {
-    //         uint64_t val = 1;
-        if  (write(ctx->input_event_fd, &val, sizeof(val)) != sizeof(val))
-        {   perror("write eventfd error");
-        }
-
+    if (write(ctx->input_event_fd, &val, sizeof(val)) != sizeof(val))
+    {
+        perror("write eventfd error");
+    }
 }
-
-
 
 int tcp_thread_init(struct tcp_thread_ctx* ctx, int id, int core_id)
 {
@@ -189,9 +186,6 @@ struct ip_thread_ctx {
     int id;
     volatile int running;
 
-    
-    // todo, pkt input entry.
-
 };
 
 
@@ -211,8 +205,6 @@ int
 
     while (ctx->running)
     {
-        // todo, read packets;
-
         // LOG_DEBUG("ip_thread_run: 2\n");
 
         unsigned short nb_rx = netif_poll_once(ctx->_netif, ctx->id);
@@ -223,15 +215,12 @@ int
 
         // netif_rx_test_sleep(nb_rx, ctx->id);
 
-
-        // sleep(1);
         if  (++cnt % 10000 == 0)
         {
             // usleep(1);
             uint64_t now = get_now();
             if  (now  - prev_ts > 1000000000UL)
             {
-                
                 LOG_INFO("ip_thread_run: 3: ctx_id: %d, pkt_cnt: %lu\n", ctx->id, pkt_cnt);
                 prev_ts = now;
             }
@@ -268,13 +257,9 @@ int ip_thread_init(struct ip_thread_ctx* ctx, int id, int core_id, struct netif*
 // thread framework object -------------------------
 
 
-
 struct tcp_thread_ctx tcp_thread_ctxs[TCP_THREAD_MAX_NUM];
 struct ip_thread_ctx ip_thread_ctxs[IP_THREAD_MAX_NUM];
 int g_tcp_thread_num, g_ip_thread_num; // global variable, init at process initialization, and should not be changed after that.
-
-// todo, tcp_thread_cb list, ip_thread_cb_list
-
 
 
 
@@ -305,32 +290,6 @@ void thread_framework_init(int ip_thread_num, int tcp_thread_num, struct netif* 
         {   LOG_INFO("ip_thread_init failed\n");
         }
     }
-
-//     for (int i = 0; i < 10; i++)
-//     {
-//         struct tcp_thread_ctx* ctx = &tcp_thread_ctxs[0];
-//         // long data = i;
-//         LOG_DEBUG("thread_framework_init: 2, i: %d\n", i);
-
-//         int *obj = rte_malloc("obj", sizeof(int), 0);
-//         *obj = i;
-
-//         ret = rte_ring_enqueue(ctx->input_pkt_ring, obj);
-//         if  (ret != 0)
-//         {   LOG_DEBUG("ring full\n");
-            
-//             // continue;
-//             goto sleep;
-//         }
-
-//         uint64_t val = 1;
-//         if  (write(ctx->input_event_fd, &val, sizeof(val)) != sizeof(val))
-//         {   perror("write eventfd error");
-//         }
-
-// sleep:
-//         sleep(1);
-//     }
 
 }
 
