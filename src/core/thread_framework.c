@@ -36,6 +36,9 @@ static inline uint64_t get_now ()
 
 void tcp_input_backend(struct pbuf *p);
 void tx_flush(void);
+// extern _Thread_local volatile int thread_tx_queue_id; // default 0, tcp thread set it to sepcific id;
+_Thread_local volatile int thread_tx_queue_id = 0; // default 0, tcp thread set it to sepcific id;
+
 
 /* void*  */ int tcp_thread_run(void* arg)
 {
@@ -43,6 +46,8 @@ void tx_flush(void);
     // int cnt = 0;
     uint64_t pkt_cnt = 0;
     uint64_t prev_ts = 0;
+
+    thread_tx_queue_id = 1 + ctx->id;    
 
     // todo, eventloop, while(epoll) { process event}
     // at first stage, just use eventfd as entry.
@@ -129,7 +134,6 @@ void tcp_thread_input_ring_notify(struct tcp_thread_ctx* ctx, uint64_t val)
 
 }
 
-extern _Thread_local int thread_tx_queue_id; // default 0, tcp thread set it to sepcific id;
 
 
 int tcp_thread_init(struct tcp_thread_ctx* ctx, int id, int core_id)
@@ -141,7 +145,6 @@ int tcp_thread_init(struct tcp_thread_ctx* ctx, int id, int core_id)
 
     LOG_DEBUG("tcp_thread_init: 1, begin, id: %d\n", id);
 
-    thread_tx_queue_id = 1 + ctx->id;
 
     ret = eventfd(0, 0);
     if  (ret < 0)
