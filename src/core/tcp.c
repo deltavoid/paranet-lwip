@@ -1684,10 +1684,11 @@ tcp_seg_free(struct tcp_seg *seg)
 #endif /* TCP_DEBUG */
     }
 
-    if  (need_free_seg)
+    if  (need_free_seg) 
     {
-    // memp_free(MEMP_TCP_SEG, seg);
-    rte_free(seg);
+      LOG_INFO("tcp_seg_free, memp_free(MEMP_TCP_SEG, seg)\n");
+      memp_free(MEMP_TCP_SEG, seg);
+      // rte_free(seg);
     }
   }
 }
@@ -1724,8 +1725,8 @@ tcp_seg_copy(struct tcp_seg *seg)
 
   LWIP_ASSERT("tcp_seg_copy: invalid seg", seg != NULL);
 
-  // cseg = (struct tcp_seg *)memp_malloc(MEMP_TCP_SEG);
-  cseg = (struct tcp_seg *)rte_malloc(NULL, sizeof(struct tcp_seg), 0);
+  cseg = (struct tcp_seg *)memp_malloc(MEMP_TCP_SEG);
+  // cseg = (struct tcp_seg *)rte_malloc(NULL, sizeof(struct tcp_seg), 0);
   if (cseg == NULL) {
     return NULL;
   }
