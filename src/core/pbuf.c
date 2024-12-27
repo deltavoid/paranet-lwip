@@ -84,6 +84,7 @@
 #include "lwip/inet_chksum.h"
 #endif
 #include "lwip/logging.h"
+#include "lwip/thread_framework.h"
 
 #include <string.h>
 #include <rte_malloc.h>
@@ -330,6 +331,7 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
     
     case PBUF_RTE_MBUF_TX: {
       LOG_DEBUG("pbuf_alloc, PBUF_RTE_MBUF_TX\n");
+      assert(thread_tx_queue_id > 0);
       mem_size_t payload_len = (mem_size_t)(LWIP_MEM_ALIGN_SIZE(offset) + LWIP_MEM_ALIGN_SIZE(length));
       mem_size_t alloc_len = (mem_size_t)(LWIP_MEM_ALIGN_SIZE(SIZEOF_STRUCT_PBUF) + payload_len);
 
@@ -340,6 +342,12 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
       }
 
       assert(payload_len <= RTE_MBUF_DEFAULT_BUF_SIZE);
+
+      struct tcp_thread_ctx* ctx = get_tcp_thread_ctx_default();
+      // PBUF_RTE_MBUF_TX must be called under tcp thread context.
+      assert(ctx != NULL);
+
+      struct rte_mempool *pktmbuf_pool_tcp_tx  = ctx->pktmbuf_pool_tcp_tx;
       struct rte_mbuf* mbuf = rte_pktmbuf_alloc(pktmbuf_pool_tcp_tx);
       if  (mbuf == NULL)
       {    return NULL;

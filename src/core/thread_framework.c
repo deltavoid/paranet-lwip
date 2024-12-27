@@ -24,6 +24,7 @@
 #include "lwip/priv/tcp_priv.h"
 
 #include <rte_mbuf.h>
+#include <rte_errno.h>
 
 // tcp_thread class ----------------------------
 
@@ -135,6 +136,25 @@ void tcp_thread_input_ring_notify(struct tcp_thread_ctx *ctx, uint64_t val)
     }
 }
 
+
+// mem layout: struct rte_mbuf | (@priv) struct tcg_seg | (@data_room) struct pbuf + data
+struct rte_mempool* tcp_thread_create_pktmbuf_pool_tcp_tx(int id)
+{
+    LWIP_UNUSED_ARG(id);
+    char pool_name[50];
+    snprintf(pool_name, 50, "tcp_thread_tx_pool-%d", id);
+    LOG_DEBUG("pool name: %s\n", pool_name);
+
+    struct rte_mempool*  ret = rte_pktmbuf_pool_create(pool_name/* NULL *//* "pktmbuf_pool_tcp_tx_0" */,
+			    256, 128, LWIP_MEM_ALIGN_SIZE(sizeof(struct tcp_seg)), 
+                LWIP_MEM_ALIGN_SIZE(sizeof(struct pbuf)) + RTE_MBUF_DEFAULT_BUF_SIZE,
+                rte_socket_id());
+    
+    if  (ret == NULL)
+        LOG_INFO("create pool failed: %s\n", rte_strerror(rte_errno));
+    return ret;
+}
+
 int tcp_thread_init(struct tcp_thread_ctx* ctx, int id, int core_id)
 {
     int ret = 0;;
@@ -161,6 +181,12 @@ int tcp_thread_init(struct tcp_thread_ctx* ctx, int id, int core_id)
         return -1;
     }
 
+    ctx->pktmbuf_pool_tcp_tx = tcp_thread_create_pktmbuf_pool_tcp_tx(ctx->id);
+    if  (ctx->pktmbuf_pool_tcp_tx == NULL)
+    {   LOG_INFO("create tcp tx pool failed\n");
+        while (1) sleep(1);
+        return -1;
+    }
 
     // create pthread
     // ret = pthread_create(&ctx->pthread_ctx, NULL, tcp_thread_run, ctx);
@@ -181,9 +207,11 @@ void tcp_thread_destroy(struct tcp_thread_ctx* ctx)
 }
 
 
+
 #define MEMPOOL_CACHE_SIZE (256)
 
-struct rte_mempool *pktmbuf_pool_tcp_tx = NULL;
+
+// struct rte_mempool *pktmbuf_pool_tcp_tx = NULL;
 
 // mem layout: struct rte_mbuf | (@priv) struct tcg_seg | (@data_room) struct pbuf + data
 struct rte_mempool* tcp_create_pktmbuf_pool_tcp_tx(int tcp_thread_num)
@@ -193,6 +221,7 @@ struct rte_mempool* tcp_create_pktmbuf_pool_tcp_tx(int tcp_thread_num)
                 LWIP_MEM_ALIGN_SIZE(sizeof(struct pbuf)) + RTE_MBUF_DEFAULT_BUF_SIZE,
                 rte_socket_id());
 }
+
 
 struct rte_mempool *pktmbuf_pool_rx = NULL;
 

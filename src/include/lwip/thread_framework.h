@@ -26,6 +26,7 @@ struct tcp_thread_ctx {
 
     pthread_t pthread_ctx;
     struct rte_ring* input_pkt_ring;
+    struct rte_mempool *pktmbuf_pool_tcp_tx;
     int id;
     volatile int running;
     int input_event_fd;
@@ -37,8 +38,8 @@ void tcp_thread_input_ring_notify(struct tcp_thread_ctx* ctx, uint64_t val);
 
 extern _Thread_local volatile int thread_tx_queue_id; // default 0, tcp thread set it to sepcific id;
 
-extern struct rte_mempool *pktmbuf_pool_tcp_tx;
-struct rte_mempool* tcp_create_pktmbuf_pool_tcp_tx(int tcp_thread_num);
+// extern struct rte_mempool *pktmbuf_pool_tcp_tx;
+// struct rte_mempool* tcp_create_pktmbuf_pool_tcp_tx(int tcp_thread_num);
 
 extern struct rte_mempool *pktmbuf_pool_rx;
 struct rte_mempool* tcp_create_pktmbuf_pool_rx(int tcp_thread_num);
@@ -61,6 +62,11 @@ static inline struct tcp_thread_ctx* get_tcp_thread_ctx_by_id(int id)
 }
 
 // todo, get_tcp_thread_ctx_default() // by thread_tx_queue_id;
+static inline struct tcp_thread_ctx* get_tcp_thread_ctx_default()
+{
+    if  (!(thread_tx_queue_id >= 1 && thread_tx_queue_id <= g_tcp_thread_num)) return NULL;
+    return &tcp_thread_ctxs[thread_tx_queue_id - 1];
+}
 
 void thread_framework_init(int ip_thread_num, int tcp_thread_num, struct netif* nif);
 
