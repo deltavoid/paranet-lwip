@@ -328,6 +328,7 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
     }
     
     case PBUF_RTE_MBUF_TX: {
+      LOG_DEBUG("pbuf_alloc, PBUF_RTE_MBUF_TX\n");
       mem_size_t payload_len = (mem_size_t)(LWIP_MEM_ALIGN_SIZE(offset) + LWIP_MEM_ALIGN_SIZE(length));
       mem_size_t alloc_len = (mem_size_t)(LWIP_MEM_ALIGN_SIZE(SIZEOF_STRUCT_PBUF) + payload_len);
 
@@ -344,6 +345,7 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
       // if (p == NULL) {
       //   return NULL;
       // }
+      assert(payload_len <= RTE_MBUF_DEFAULT_BUF_SIZE);
       struct rte_mbuf* mbuf = rte_pktmbuf_alloc(pktmbuf_pool_tcp_tx);
       if  (mbuf == NULL)
       {    return NULL;
@@ -959,6 +961,7 @@ pbuf_free(struct pbuf *p)
             break;
 
         case PBUF_TYPE_ALLOC_SRC_MASK_RTE_MBUF_TX:
+            LOG_DEBUG("pbuf_free, PBUF_TYPE_ALLOC_SRC_MASK_RTE_MBUF_TX\n");
             assert(p->related_mbuf != NULL);
             rte_pktmbuf_free(p->related_mbuf);
             break;
