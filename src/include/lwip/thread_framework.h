@@ -46,7 +46,7 @@ struct rte_mempool* tcp_create_pktmbuf_pool_rx(int tcp_thread_num);
 // thread framework -------------------
 
 #define TCP_THREAD_MAX_NUM 32
-#define IP_THREAD_MAX_NUM 8 
+#define IP_THREAD_MAX_NUM 32
 
 
 extern struct tcp_thread_ctx tcp_thread_ctxs[TCP_THREAD_MAX_NUM];

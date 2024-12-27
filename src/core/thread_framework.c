@@ -189,7 +189,7 @@ struct rte_mempool *pktmbuf_pool_tcp_tx = NULL;
 struct rte_mempool* tcp_create_pktmbuf_pool_tcp_tx(int tcp_thread_num)
 {
     return rte_pktmbuf_pool_create("pktmbuf_pool_tcp_tx",
-			    tcp_thread_num * 64, MEMPOOL_CACHE_SIZE, LWIP_MEM_ALIGN_SIZE(sizeof(struct tcp_seg)), 
+			    tcp_thread_num * 128, MEMPOOL_CACHE_SIZE, LWIP_MEM_ALIGN_SIZE(sizeof(struct tcp_seg)), 
                 LWIP_MEM_ALIGN_SIZE(sizeof(struct pbuf)) + RTE_MBUF_DEFAULT_BUF_SIZE,
                 rte_socket_id());
 }
