@@ -81,6 +81,7 @@
 
 #include <string.h>
 #include <rte_malloc.h>
+#include <rte_mbuf.h>
 
 #ifdef LWIP_HOOK_FILENAME
 #include LWIP_HOOK_FILENAME
@@ -171,7 +172,13 @@ tcp_create_segment(const struct tcp_pcb *pcb, struct pbuf *p, u8_t hdrflags, u32
 
     LOG_DEBUG("tcp_create_segment: 2\n");
     // seg = (struct tcp_seg *)memp_malloc(MEMP_TCP_SEG);
-    seg = (struct tcp_seg *)rte_malloc(NULL, sizeof(struct tcp_seg), 0);
+  
+    if  (p->type_internal == PBUF_RTE_MBUF_TX)
+    {
+      seg = rte_mbuf_to_priv(p->related_mbuf);
+    }
+    else
+      seg = (struct tcp_seg *)rte_malloc(NULL, sizeof(struct tcp_seg), 0);
   if ((seg) == NULL) {
     LWIP_DEBUGF(TCP_OUTPUT_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("tcp_create_segment: no memory.\n"));
       LOG_DEBUG("tcp_create_segment: 3\n");

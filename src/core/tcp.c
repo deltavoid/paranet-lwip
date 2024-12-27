@@ -1670,15 +1670,25 @@ tcp_segs_free(struct tcp_seg *seg)
 void
 tcp_seg_free(struct tcp_seg *seg)
 {
+  bool need_free_seg = true;
+
   if (seg != NULL) {
     if (seg->p != NULL) {
+      
+      if  (seg->p->type_internal == PBUF_RTE_MBUF_TX)
+          need_free_seg = false;
+
       pbuf_free(seg->p);
 #if TCP_DEBUG
       seg->p = NULL;
 #endif /* TCP_DEBUG */
     }
+
+    if  (need_free_seg)
+    {
     // memp_free(MEMP_TCP_SEG, seg);
     rte_free(seg);
+    }
   }
 }
 
