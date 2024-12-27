@@ -243,6 +243,7 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
       p = pbuf_alloc_reference(NULL, length, type);
       break;
     case PBUF_POOL: {
+      LOG_INFO("pbuf_alloc, PBUF_POOL\n");
       struct pbuf *q, *last;
       u16_t rem_len; /* remaining length */
       p = NULL;
@@ -282,6 +283,7 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
       break;
     }
     case PBUF_RAM: {
+      LOG_INFO("pbuf_alloc, PBUF_RAM\n");
       mem_size_t payload_len = (mem_size_t)(LWIP_MEM_ALIGN_SIZE(offset) + LWIP_MEM_ALIGN_SIZE(length));
       mem_size_t alloc_len = (mem_size_t)(LWIP_MEM_ALIGN_SIZE(SIZEOF_STRUCT_PBUF) + payload_len);
 

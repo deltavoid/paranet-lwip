@@ -309,7 +309,7 @@ do_memp_malloc_pool_fn(const struct memp_desc *desc, const char *file, const int
 #endif
 {
   void* ret = rte_malloc(NULL, desc->size, 0);
-  // LOG_INFO("do_memp_malloc_pool, desc: %s, ret: 0x%0lx\n", desc->desc, (long)ret);
+  LOG_INFO("do_memp_malloc_pool, desc: %s, ret: 0x%0lx\n", desc->desc, (long)ret);
   return ret;
 }
 
