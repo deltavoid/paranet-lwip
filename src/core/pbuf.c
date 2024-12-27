@@ -191,7 +191,10 @@ pbuf_init_alloced_pbuf(struct pbuf *p, void *payload, u16_t tot_len, u16_t len, 
   p->flags = flags;
   p->ref = 1;
   p->if_idx = NETIF_NO_INDEX;
+  p->related_mbuf = NULL;
 }
+
+extern struct rte_mempool *pktmbuf_pool_tcp_tx;
 
 /**
  * @ingroup pbuf
@@ -323,6 +326,41 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
                   ((mem_ptr_t)p->payload % MEM_ALIGNMENT) == 0);
       break;
     }
+    
+    case PBUF_RTE_MBUF_TX: {
+      mem_size_t payload_len = (mem_size_t)(LWIP_MEM_ALIGN_SIZE(offset) + LWIP_MEM_ALIGN_SIZE(length));
+      mem_size_t alloc_len = (mem_size_t)(LWIP_MEM_ALIGN_SIZE(SIZEOF_STRUCT_PBUF) + payload_len);
+
+      /* bug #50040: Check for integer overflow when calculating alloc_len */
+      if ((payload_len < LWIP_MEM_ALIGN_SIZE(length)) ||
+          (alloc_len < LWIP_MEM_ALIGN_SIZE(length))) {
+        return NULL;
+      }
+
+      /* If pbuf is to be allocated in RAM, allocate memory for it. */
+      // p = (struct pbuf *)mem_malloc(alloc_len);
+      // change to use rte_malloc instead default heap mem_malloc
+      // p = (struct pbuf *)rte_malloc(NULL, alloc_len, 0);
+      // if (p == NULL) {
+      //   return NULL;
+      // }
+      struct rte_mbuf* mbuf = rte_pktmbuf_alloc(pktmbuf_pool_tcp_tx);
+      if  (mbuf == NULL)
+      {    return NULL;
+      }
+      p= rte_pktmbuf_mtod(mbuf, struct pbuf *);
+
+      pbuf_init_alloced_pbuf(p, LWIP_MEM_ALIGN((void *)((u8_t *)p + SIZEOF_STRUCT_PBUF + offset)),
+                             length, length, type, 0);
+      p->related_mbuf = mbuf;
+      LWIP_ASSERT("pbuf_alloc: pbuf->payload properly aligned",
+                  ((mem_ptr_t)p->payload % MEM_ALIGNMENT) == 0);
+      break;
+
+
+    }
+
+
     default:
       LWIP_ASSERT("pbuf_alloc: erroneous type", 0);
       return NULL;
@@ -882,26 +920,52 @@ pbuf_free(struct pbuf *p)
       } else
 #endif /* LWIP_SUPPORT_CUSTOM_PBUF */
       {
-        /* is this a pbuf from the pool? */
-        if (alloc_src == PBUF_TYPE_ALLOC_SRC_MASK_STD_MEMP_PBUF_POOL) {
-          memp_free(MEMP_PBUF_POOL, p);
-          // rte_free(p);
-          /* is this a ROM or RAM referencing pbuf? */
-        } else if (alloc_src == PBUF_TYPE_ALLOC_SRC_MASK_STD_MEMP_PBUF) {
-          memp_free(MEMP_PBUF, p);
-          /* type == PBUF_RAM */
-        } else if (alloc_src == PBUF_TYPE_ALLOC_SRC_MASK_STD_HEAP) {
-          // mem_free(p);
-          // LOG_INFO("PBUF_TYPE_ALLOC_SRC_MASK_STD_HEAP\n");
-          rte_free(p);
-        } 
-        else if  (alloc_src == PBUF_TYPE_ALLOC_SRC_MASK_RTE_MALLOC) {
-          // LOG_INFO("PBUF_TYPE_ALLOC_SRC_MASK_RTE_MALLOC\n");
-          rte_free(p);
-        }
-        else {
-          /* @todo: support freeing other types */
-          LWIP_ASSERT("invalid pbuf type", 0);
+        // /* is this a pbuf from the pool? */
+        // if (alloc_src == PBUF_TYPE_ALLOC_SRC_MASK_STD_MEMP_PBUF_POOL) {
+        //   memp_free(MEMP_PBUF_POOL, p);
+        //   // rte_free(p);
+        //   /* is this a ROM or RAM referencing pbuf? */
+        // } else if (alloc_src == PBUF_TYPE_ALLOC_SRC_MASK_STD_MEMP_PBUF) {
+        //   memp_free(MEMP_PBUF, p);
+        //   /* type == PBUF_RAM */
+        // } else if (alloc_src == PBUF_TYPE_ALLOC_SRC_MASK_STD_HEAP) {
+        //   // mem_free(p);
+        //   // LOG_INFO("PBUF_TYPE_ALLOC_SRC_MASK_STD_HEAP\n");
+        //   rte_free(p);
+        // } 
+        // else if  (alloc_src == PBUF_TYPE_ALLOC_SRC_MASK_RTE_MALLOC) {
+        //   // LOG_INFO("PBUF_TYPE_ALLOC_SRC_MASK_RTE_MALLOC\n");
+        //   rte_free(p);
+        // }
+        // else {
+        //   /* @todo: support freeing other types */
+        //   LWIP_ASSERT("invalid pbuf type", 0);
+        // }
+        switch (alloc_src) {
+        case PBUF_TYPE_ALLOC_SRC_MASK_STD_MEMP_PBUF_POOL:
+            memp_free(MEMP_PBUF_POOL, p);
+            break;
+        
+        case PBUF_TYPE_ALLOC_SRC_MASK_STD_MEMP_PBUF:
+            memp_free(MEMP_PBUF, p);
+            break;
+        
+        case PBUF_TYPE_ALLOC_SRC_MASK_STD_HEAP:
+            rte_free(p);
+            break;
+
+        case PBUF_TYPE_ALLOC_SRC_MASK_RTE_MALLOC:
+            rte_free(p);
+            break;
+
+        case PBUF_TYPE_ALLOC_SRC_MASK_RTE_MBUF_TX:
+            assert(p->related_mbuf != NULL);
+            rte_pktmbuf_free(p->related_mbuf);
+            break;
+
+        default:
+            /* @todo: support freeing other types */
+            LWIP_ASSERT("invalid pbuf type", 0);
         }
       }
       count++;
