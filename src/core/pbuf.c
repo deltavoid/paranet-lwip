@@ -243,7 +243,7 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
       p = pbuf_alloc_reference(NULL, length, type);
       break;
     case PBUF_POOL: {
-      LOG_INFO("pbuf_alloc, PBUF_POOL\n");
+      // LOG_INFO("pbuf_alloc, PBUF_POOL\n");
       struct pbuf *q, *last;
       u16_t rem_len; /* remaining length */
       p = NULL;
@@ -283,7 +283,7 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
       break;
     }
     case PBUF_RAM: {
-      LOG_INFO("pbuf_alloc, PBUF_RAM\n");
+      // LOG_INFO("pbuf_alloc, PBUF_RAM\n");
       mem_size_t payload_len = (mem_size_t)(LWIP_MEM_ALIGN_SIZE(offset) + LWIP_MEM_ALIGN_SIZE(length));
       mem_size_t alloc_len = (mem_size_t)(LWIP_MEM_ALIGN_SIZE(SIZEOF_STRUCT_PBUF) + payload_len);
 
@@ -380,7 +380,7 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
       struct ip_thread_ctx* ctx = get_ip_thread_ctx_default();
       // PBUF_RTE_MBUF_RX must be called under ip thread context.
       assert(ctx != NULL);
-      
+
       struct rte_mempool *pktmbuf_pool_rx  = ctx->pktmbuf_pool_rx;
       struct rte_mbuf* mbuf = rte_pktmbuf_alloc(pktmbuf_pool_rx);
       if  (mbuf == NULL)

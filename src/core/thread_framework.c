@@ -146,7 +146,7 @@ struct rte_mempool* tcp_thread_create_pktmbuf_pool_tcp_tx(int id)
     LOG_DEBUG("pool name: %s\n", pool_name);
 
     struct rte_mempool*  ret = rte_pktmbuf_pool_create(pool_name/* NULL *//* "pktmbuf_pool_tcp_tx_0" */,
-			    256, 128, LWIP_MEM_ALIGN_SIZE(sizeof(struct tcp_seg)), 
+			    8192 - 1, 512, LWIP_MEM_ALIGN_SIZE(sizeof(struct tcp_seg)), 
                 LWIP_MEM_ALIGN_SIZE(sizeof(struct pbuf)) + RTE_MBUF_DEFAULT_BUF_SIZE,
                 rte_socket_id());
     
@@ -301,7 +301,7 @@ struct rte_mempool* ip_thread_create_pktmbuf_pool_rx(int id)
     LOG_DEBUG("pool name: %s\n", pool_name);
     
     struct rte_mempool* ret = rte_pktmbuf_pool_create(/* "pktmbuf_pool_rx" */pool_name,
-			    /* tcp_thread_num * 512 */16384 - 1, 512, 0, 
+			    /* tcp_thread_num * 512 */32768 - 1, 512, 0, 
                 LWIP_MEM_ALIGN_SIZE(sizeof(struct pbuf)) + RTE_MBUF_DEFAULT_BUF_SIZE,
                 rte_socket_id());
 
