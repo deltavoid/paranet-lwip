@@ -366,6 +366,7 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
 
     case PBUF_RTE_MBUF_RX: {
       LOG_DEBUG("pbuf_alloc, PBUF_RTE_MBUF_RX\n");
+      assert(ip_thread_identify_id > 0);
       mem_size_t payload_len = (mem_size_t)(LWIP_MEM_ALIGN_SIZE(offset) + LWIP_MEM_ALIGN_SIZE(length));
       mem_size_t alloc_len = (mem_size_t)(LWIP_MEM_ALIGN_SIZE(SIZEOF_STRUCT_PBUF) + payload_len);
 
@@ -374,8 +375,13 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
           (alloc_len < LWIP_MEM_ALIGN_SIZE(length))) {
         return NULL;
       }
-
       assert(payload_len <= RTE_MBUF_DEFAULT_BUF_SIZE);
+
+      struct ip_thread_ctx* ctx = get_ip_thread_ctx_default();
+      // PBUF_RTE_MBUF_RX must be called under ip thread context.
+      assert(ctx != NULL);
+      
+      struct rte_mempool *pktmbuf_pool_rx  = ctx->pktmbuf_pool_rx;
       struct rte_mbuf* mbuf = rte_pktmbuf_alloc(pktmbuf_pool_rx);
       if  (mbuf == NULL)
       {    return NULL;

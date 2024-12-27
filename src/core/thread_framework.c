@@ -140,7 +140,7 @@ void tcp_thread_input_ring_notify(struct tcp_thread_ctx *ctx, uint64_t val)
 // mem layout: struct rte_mbuf | (@priv) struct tcg_seg | (@data_room) struct pbuf + data
 struct rte_mempool* tcp_thread_create_pktmbuf_pool_tcp_tx(int id)
 {
-    LWIP_UNUSED_ARG(id);
+    // LWIP_UNUSED_ARG(id);
     char pool_name[50];
     snprintf(pool_name, 50, "tcp_thread_tx_pool-%d", id);
     LOG_DEBUG("pool name: %s\n", pool_name);
@@ -223,7 +223,7 @@ struct rte_mempool* tcp_create_pktmbuf_pool_tcp_tx(int tcp_thread_num)
 }
 
 
-struct rte_mempool *pktmbuf_pool_rx = NULL;
+// struct rte_mempool *pktmbuf_pool_rx = NULL;
 
 struct rte_mempool* tcp_create_pktmbuf_pool_rx(int tcp_thread_num)
 {
@@ -235,13 +235,16 @@ struct rte_mempool* tcp_create_pktmbuf_pool_rx(int tcp_thread_num)
 
 
 // ip thread class ---------------------------
-struct ip_thread_ctx {
-    pthread_t pthread_ctx;
-    struct netif* _netif;
-    int id;
-    volatile int running;
+// struct ip_thread_ctx {
+//     pthread_t pthread_ctx;
+//     struct netif* _netif;
+//     struct rte_mempool *pktmbuf_pool_rx;
+//     int id;
+//     volatile int running;
 
-};
+// };
+
+_Thread_local volatile int ip_thread_identify_id = 0; // default 0, ip thread set it to sepcific id;
 
 
 unsigned short netif_poll_once(struct netif* _netif_p, int queue_id);
@@ -257,6 +260,8 @@ int
     uint64_t prev_ts = 0;
     uint64_t pkt_cnt = 0;
     // death loop  poll pkt only wait process exit
+
+    ip_thread_identify_id = ctx->id + 1;
 
     while (ctx->running)
     {
@@ -289,6 +294,20 @@ int
     return 0;
 }
 
+struct rte_mempool* ip_thread_create_pktmbuf_pool_rx(int id)
+{
+    char pool_name[50];
+    snprintf(pool_name, 50, "ip_thread_rx_pool-%d", id);
+    LOG_DEBUG("pool name: %s\n", pool_name);
+    
+    struct rte_mempool* ret = rte_pktmbuf_pool_create(/* "pktmbuf_pool_rx" */pool_name,
+			    /* tcp_thread_num * 512 */16384 - 1, 512, 0, 
+                LWIP_MEM_ALIGN_SIZE(sizeof(struct pbuf)) + RTE_MBUF_DEFAULT_BUF_SIZE,
+                rte_socket_id());
+
+    return ret;
+}
+
 int ip_thread_init(struct ip_thread_ctx* ctx, int id, int core_id, struct netif* nif)
 {
     int ret = 0;
@@ -296,6 +315,12 @@ int ip_thread_init(struct ip_thread_ctx* ctx, int id, int core_id, struct netif*
     ctx->id = id;
     ctx->running = true;
     ctx->_netif = nif;
+
+
+    ctx->pktmbuf_pool_rx = ip_thread_create_pktmbuf_pool_rx(ctx->id);
+    if  (ctx->pktmbuf_pool_rx == NULL)
+    {   LOG_INFO("create ip pool failed\n");
+    }
 
         // create pthread
     // ret = pthread_create(&ctx->pthread_ctx, NULL, ip_thread_run, ctx);
@@ -309,6 +334,8 @@ int ip_thread_init(struct ip_thread_ctx* ctx, int id, int core_id, struct netif*
 }
 
 
+
+
 // thread framework object -------------------------
 
 
@@ -316,6 +343,12 @@ struct tcp_thread_ctx tcp_thread_ctxs[TCP_THREAD_MAX_NUM];
 struct ip_thread_ctx ip_thread_ctxs[IP_THREAD_MAX_NUM];
 int g_tcp_thread_num, g_ip_thread_num; // global variable, init at process initialization, and should not be changed after that.
 
+
+// struct ip_thread_ctx* get_ip_thread_ctx_default()
+// {
+//     if  (!(ip_thread_identify_id >= 1 && ip_thread_identify_id <= g_ip_thread_num)) return NULL;
+//     return &ip_thread_ctxs[ip_thread_identify_id - 1];
+// }
 
 
 void thread_framework_init(int ip_thread_num, int tcp_thread_num, struct netif* nif)
