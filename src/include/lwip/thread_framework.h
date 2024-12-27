@@ -40,6 +40,8 @@ extern _Thread_local volatile int thread_tx_queue_id; // default 0, tcp thread s
 extern struct rte_mempool *pktmbuf_pool_tcp_tx;
 struct rte_mempool* tcp_create_pktmbuf_pool_tcp_tx(int tcp_thread_num);
 
+extern struct rte_mempool *pktmbuf_pool_rx;
+struct rte_mempool* tcp_create_pktmbuf_pool_rx(int tcp_thread_num);
 
 // thread framework -------------------
 

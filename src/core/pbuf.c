@@ -195,6 +195,7 @@ pbuf_init_alloced_pbuf(struct pbuf *p, void *payload, u16_t tot_len, u16_t len, 
 }
 
 extern struct rte_mempool *pktmbuf_pool_tcp_tx;
+extern struct rte_mempool *pktmbuf_pool_rx;
 
 /**
  * @ingroup pbuf
@@ -338,13 +339,6 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
         return NULL;
       }
 
-      /* If pbuf is to be allocated in RAM, allocate memory for it. */
-      // p = (struct pbuf *)mem_malloc(alloc_len);
-      // change to use rte_malloc instead default heap mem_malloc
-      // p = (struct pbuf *)rte_malloc(NULL, alloc_len, 0);
-      // if (p == NULL) {
-      //   return NULL;
-      // }
       assert(payload_len <= RTE_MBUF_DEFAULT_BUF_SIZE);
       struct rte_mbuf* mbuf = rte_pktmbuf_alloc(pktmbuf_pool_tcp_tx);
       if  (mbuf == NULL)
@@ -358,10 +352,33 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
       LWIP_ASSERT("pbuf_alloc: pbuf->payload properly aligned",
                   ((mem_ptr_t)p->payload % MEM_ALIGNMENT) == 0);
       break;
-
-
     }
 
+    case PBUF_RTE_MBUF_RX: {
+      LOG_DEBUG("pbuf_alloc, PBUF_RTE_MBUF_RX\n");
+      mem_size_t payload_len = (mem_size_t)(LWIP_MEM_ALIGN_SIZE(offset) + LWIP_MEM_ALIGN_SIZE(length));
+      mem_size_t alloc_len = (mem_size_t)(LWIP_MEM_ALIGN_SIZE(SIZEOF_STRUCT_PBUF) + payload_len);
+
+      /* bug #50040: Check for integer overflow when calculating alloc_len */
+      if ((payload_len < LWIP_MEM_ALIGN_SIZE(length)) ||
+          (alloc_len < LWIP_MEM_ALIGN_SIZE(length))) {
+        return NULL;
+      }
+
+      assert(payload_len <= RTE_MBUF_DEFAULT_BUF_SIZE);
+      struct rte_mbuf* mbuf = rte_pktmbuf_alloc(pktmbuf_pool_rx);
+      if  (mbuf == NULL)
+      {    return NULL;
+      }
+      p= rte_pktmbuf_mtod(mbuf, struct pbuf *);
+
+      pbuf_init_alloced_pbuf(p, LWIP_MEM_ALIGN((void *)((u8_t *)p + SIZEOF_STRUCT_PBUF + offset)),
+                             length, length, type, 0);
+      p->related_mbuf = mbuf;
+      LWIP_ASSERT("pbuf_alloc: pbuf->payload properly aligned",
+                  ((mem_ptr_t)p->payload % MEM_ALIGNMENT) == 0);
+      break;
+    }
 
     default:
       LWIP_ASSERT("pbuf_alloc: erroneous type", 0);
@@ -962,6 +979,12 @@ pbuf_free(struct pbuf *p)
 
         case PBUF_TYPE_ALLOC_SRC_MASK_RTE_MBUF_TX:
             LOG_DEBUG("pbuf_free, PBUF_TYPE_ALLOC_SRC_MASK_RTE_MBUF_TX\n");
+            assert(p->related_mbuf != NULL);
+            rte_pktmbuf_free(p->related_mbuf);
+            break;
+
+        case PBUF_TYPE_ALLOC_SRC_MASK_RTE_MBUF_RX:
+            LOG_DEBUG("pbuf_free, PBUF_TYPE_ALLOC_SRC_MASK_RTE_MBUF_RX\n");
             assert(p->related_mbuf != NULL);
             rte_pktmbuf_free(p->related_mbuf);
             break;

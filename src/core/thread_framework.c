@@ -180,15 +180,26 @@ void tcp_thread_destroy(struct tcp_thread_ctx* ctx)
     rte_ring_free(ctx->input_pkt_ring);
 }
 
-struct rte_mempool *pktmbuf_pool_tcp_tx = NULL;
 
 #define MEMPOOL_CACHE_SIZE (256)
+
+struct rte_mempool *pktmbuf_pool_tcp_tx = NULL;
 
 // mem layout: struct rte_mbuf | (@priv) struct tcg_seg | (@data_room) struct pbuf + data
 struct rte_mempool* tcp_create_pktmbuf_pool_tcp_tx(int tcp_thread_num)
 {
     return rte_pktmbuf_pool_create("pktmbuf_pool_tcp_tx",
 			    tcp_thread_num * 64, MEMPOOL_CACHE_SIZE, LWIP_MEM_ALIGN_SIZE(sizeof(struct tcp_seg)), 
+                LWIP_MEM_ALIGN_SIZE(sizeof(struct pbuf)) + RTE_MBUF_DEFAULT_BUF_SIZE,
+                rte_socket_id());
+}
+
+struct rte_mempool *pktmbuf_pool_rx = NULL;
+
+struct rte_mempool* tcp_create_pktmbuf_pool_rx(int tcp_thread_num)
+{
+    return rte_pktmbuf_pool_create("pktmbuf_pool_rx",
+			    tcp_thread_num * 512, MEMPOOL_CACHE_SIZE, 0, 
                 LWIP_MEM_ALIGN_SIZE(sizeof(struct pbuf)) + RTE_MBUF_DEFAULT_BUF_SIZE,
                 rte_socket_id());
 }
