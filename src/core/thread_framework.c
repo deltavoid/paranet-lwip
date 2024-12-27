@@ -21,7 +21,9 @@
 #include "lwip/prot/tcp.h"
 #include "lwip/def.h"
 #include "lwip/timeouts.h"
+#include "lwip/priv/tcp_priv.h"
 
+#include <rte_mbuf.h>
 
 // tcp_thread class ----------------------------
 
@@ -176,6 +178,18 @@ int tcp_thread_init(struct tcp_thread_ctx* ctx, int id, int core_id)
 void tcp_thread_destroy(struct tcp_thread_ctx* ctx)
 {
     rte_ring_free(ctx->input_pkt_ring);
+}
+
+struct rte_mempool *pktmbuf_pool_tcp_tx = NULL;
+
+#define MEMPOOL_CACHE_SIZE (256)
+
+struct rte_mempool* tcp_create_pktmbuf_pool_tcp_tx(int tcp_thread_num)
+{
+    return rte_pktmbuf_pool_create("pktmbuf_pool_tcp_tx",
+			    tcp_thread_num * 64, MEMPOOL_CACHE_SIZE, sizeof(struct tcp_seg), 
+                LWIP_MEM_ALIGN_SIZE(sizeof(struct pbuf)) + RTE_MBUF_DEFAULT_BUF_SIZE,
+                rte_socket_id());
 }
 
 

@@ -37,6 +37,9 @@ void tcp_thread_input_ring_notify(struct tcp_thread_ctx* ctx, uint64_t val);
 
 extern _Thread_local volatile int thread_tx_queue_id; // default 0, tcp thread set it to sepcific id;
 
+extern struct rte_mempool *pktmbuf_pool_tcp_tx;
+struct rte_mempool* tcp_create_pktmbuf_pool_tcp_tx(int tcp_thread_num);
+
 
 // thread framework -------------------
 

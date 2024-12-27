@@ -542,7 +542,7 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
     LWIP_ASSERT("inconsistent oversize vs. len", (oversize == 0) || (pos == len));
 #endif /* TCP_OVERSIZE */
 
-  LOG_DEBUG("tcp_write: 7\n");
+    LOG_DEBUG("tcp_write: 7\n");
 
 #if !LWIP_NETIF_TX_SINGLE_PBUF
     /*
