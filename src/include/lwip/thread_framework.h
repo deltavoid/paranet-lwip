@@ -64,7 +64,7 @@ struct ip_thread_ctx {
 extern struct tcp_thread_ctx tcp_thread_ctxs[TCP_THREAD_MAX_NUM];
 extern struct ip_thread_ctx ip_thread_ctxs[IP_THREAD_MAX_NUM];
 extern int g_tcp_thread_num, g_ip_thread_num; // global variable, init at process initialization, and should not be changed after that.
-
+extern uint64_t tcp_input_frontend_pkt_cnt[IP_THREAD_MAX_NUM];
 
 
 static inline struct tcp_thread_ctx* get_tcp_thread_ctx_by_id(int id)
