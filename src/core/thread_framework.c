@@ -61,6 +61,8 @@ void user_app_init();
     if  (ctx->id == 0)
     {
         user_app_init();
+
+        tx_flush();
     }
 
     while (ctx->running)
