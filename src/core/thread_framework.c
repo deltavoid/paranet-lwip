@@ -43,6 +43,8 @@ void tx_flush(void);
 _Thread_local volatile int thread_tx_queue_id = 0; // default 0, tcp thread set it to sepcific id;
 
 
+void user_app_init();
+
 /* void*  */ int tcp_thread_run(void* arg)
 {
     struct tcp_thread_ctx* ctx = (struct tcp_thread_ctx*)arg;
@@ -55,6 +57,11 @@ _Thread_local volatile int thread_tx_queue_id = 0; // default 0, tcp thread set 
     // todo, eventloop, while(epoll) { process event}
     // at first stage, just use eventfd as entry.
     ctx->loop_state = 1;
+
+    if  (ctx->id == 0)
+    {
+        user_app_init();
+    }
 
     while (ctx->running)
     {
