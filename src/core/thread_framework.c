@@ -47,16 +47,17 @@ _Thread_local volatile int thread_tx_queue_id = 0; // default 0, tcp thread set 
 void user_app_init();
 
 
-void tcp_thread_input_ring_notify(struct tcp_thread_ctx *ctx)
+int tcp_thread_input_ring_notify(struct tcp_thread_ctx *ctx)
 {
     if  (ctx->ring_in_process)
-        return ;
+        return 0;
     
     uint64_t val = 1;
     if (write(ctx->input_event_fd, &val, sizeof(val)) != sizeof(val))
     {
         perror("write eventfd error");
     }
+    return 1;
 }
 
 int tcp_thread_input_ring_ack(struct tcp_thread_ctx *ctx, uint64_t* val_p)
@@ -70,6 +71,9 @@ int tcp_thread_input_ring_ack(struct tcp_thread_ctx *ctx, uint64_t* val_p)
     return 0;
 }
 
+
+_Thread_local uint64_t input_enqueue_num = 0, event_fd_notify_num = 0;
+
 int tcp_thread_input_ring_enqueue(int tcp_tid, int ip_tid, void* data)
 {
     assert(tcp_tid >= 0 && tcp_tid < g_tcp_thread_num);
@@ -79,7 +83,8 @@ int tcp_thread_input_ring_enqueue(int tcp_tid, int ip_tid, void* data)
     struct rte_ring* ring = ctx->input_pkt_rings[ip_tid];
     int ret = rte_ring_enqueue(ring, data);
 
-    tcp_thread_input_ring_notify(ctx);
+    // input_enqueue_num++;
+    // event_fd_notify_num += tcp_thread_input_ring_notify(ctx);
     return ret;
 }
 
@@ -150,7 +155,7 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id
     uint64_t poll_cnt = 0;
 
 #define MAX_EPOLL_EVENT_NUM 5
-    struct epoll_event events[MAX_EPOLL_EVENT_NUM];
+    // struct epoll_event events[MAX_EPOLL_EVENT_NUM];
 
     thread_tx_queue_id = 1 + ctx->id;    
 
@@ -172,40 +177,44 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id
         ctx->loop_state = 2;        
         LOG_DEBUG("tcp_thread_run: 2, id: %d\n", ctx->id);
 
+
+        // dead poll
+        // usleep(1);
         // int ring_num = rte_ring_count(ctx->input_pkt_ring);
         // if (ring_num == 0)
-        if  (last_poll_pkt_num == 0)
-        {
-            ctx->ring_in_process = false;
+        // if  (last_poll_pkt_num == 0)
+        // {
+        //     ctx->ring_in_process = false;
 
-            int num = epoll_wait(ctx->epoll_fd, events, MAX_EPOLL_EVENT_NUM, 250);
-            LOG_DEBUG("tcp_thread_run: 2, id: %d, epoll_wait return %d\n", ctx->id, num);
-            if ((num < 0))
-                perror("epoll_wait error");
+        //     // return at once. dead lock
+        //     int num = epoll_wait(ctx->epoll_fd, events, MAX_EPOLL_EVENT_NUM, /* 250 */0);
+        //     LOG_DEBUG("tcp_thread_run: 2, id: %d, epoll_wait return %d\n", ctx->id, num);
+        //     if ((num < 0))
+        //         perror("epoll_wait error");
 
-            for (int i = 0; i < num; i++)
-            {
-                int fd = events[i].data.fd;
-                if (fd == ctx->input_event_fd)
-                {
-                    uint64_t val;
-                    tcp_thread_input_ring_ack(ctx, &val);
+        //     for (int i = 0; i < num; i++)
+        //     {
+        //         int fd = events[i].data.fd;
+        //         if (fd == ctx->input_event_fd)
+        //         {
+        //             uint64_t val;
+        //             tcp_thread_input_ring_ack(ctx, &val);
 
-                    // pkt_cnt += tcp_thread_poll_input_ring_once(ctx);
-                    // ring_num = rte_ring_count(ctx->input_pkt_ring);
-                    // if (ring_num > 0)
-                    //     ctx->ring_in_process = true;
+        //             // pkt_cnt += tcp_thread_poll_input_ring_once(ctx);
+        //             // ring_num = rte_ring_count(ctx->input_pkt_ring);
+        //             // if (ring_num > 0)
+        //             //     ctx->ring_in_process = true;
 
-                    ctx->ring_in_process = true;
-                }
-                else
-                {
-                    LOG_INFO("tcp_thread_run, unknown event\n");
-                }
-            }
-        }
+        //             ctx->ring_in_process = true;
+        //         }
+        //         else
+        //         {
+        //             LOG_INFO("tcp_thread_run, unknown event\n");
+        //         }
+        //     }
+        // }
 
-        if  (ctx->ring_in_process > 0)
+        // if  (ctx->ring_in_process > 0)
         {
             last_poll_pkt_num = 0;
             for (int i = 0; i < g_ip_thread_num; i++)
@@ -286,7 +295,7 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id
 
         ctx->loop_state = 10;
 
-        // sleep(1);        
+        usleep(1);        
     }
 
     // return NULL;
@@ -472,8 +481,8 @@ int
             uint64_t now = get_now();
             if  (now  - prev_ts > 1000000000UL)
             {
-                LOG_INFO("ip_thread_run: 3: ctx_id: %d, pkt_cnt: %lu, nb_rx: %d\n", 
-                        ctx->id, pkt_cnt, nb_rx);
+                LOG_INFO("ip_thread_run: 3: ctx_id: %d, pkt_cnt: %lu, nb_rx: %d, enqueue_num: %ld, notify_num: %ld, ratio e/n: %lf\n", 
+                        ctx->id, pkt_cnt, nb_rx, input_enqueue_num, event_fd_notify_num, (double)input_enqueue_num / event_fd_notify_num);
                 prev_ts = now;
             }
         }

@@ -66,7 +66,7 @@ struct tcp_thread_ctx {
     struct rte_ring* input_pkt_rings[IP_THREAD_MAX_NUM];
 };
 
-void tcp_thread_input_ring_notify(struct tcp_thread_ctx *ctx);
+//  void tcp_thread_input_ring_notify(struct tcp_thread_ctx *ctx);
 int tcp_thread_input_ring_enqueue(int tcp_tid, int ip_tid, void* data);
 
 
@@ -125,6 +125,8 @@ static inline struct ip_thread_ctx* get_ip_thread_ctx_default()
     if  (!(ip_thread_identify_id >= 1 && ip_thread_identify_id <= g_ip_thread_num)) return NULL;
     return &ip_thread_ctxs[ip_thread_identify_id - 1];
 }
+
+extern _Thread_local uint64_t input_enqueue_num, event_fd_notify_num;
 
 
 
