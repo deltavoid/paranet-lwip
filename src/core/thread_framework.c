@@ -118,15 +118,21 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id
             // get object
             // LOG_DEBUG("tcp_thread_run: 4, data: %d\n", *(int*)obj_ptr);
 
-            struct tcp_thread_input_pkt_wrapper *wrapper =
-                (struct tcp_thread_input_pkt_wrapper *)obj_ptr;
-            struct pbuf *p = wrapper->p;
+            // struct tcp_thread_input_pkt_wrapper *wrapper =
+            //     (struct tcp_thread_input_pkt_wrapper *)obj_ptr;
+            // struct pbuf *p = wrapper->p;
+            struct pbuf *p = (struct pbuf *)obj_ptr;
+            // assert(p->type_internal == PBUF_RTE_MBUF_RX);
             // struct tcp_hdr *tcphdr = (struct tcp_hdr *)p->payload;
             // LOG_DEBUG("tcp_thread_run: tcphdr: src: %d, dest: %d\n",
             //     lwip_ntohs(tcphdr->src), lwip_ntohs(tcphdr->dest));
 
-            ip_data = wrapper->ip_data;
-            rte_free(wrapper);
+            assert(p->type_internal == PBUF_RTE_MBUF_RX);
+            struct ip_globals* ip_data_p = rte_mbuf_to_priv(p->related_mbuf);
+
+            // ip_data = wrapper->ip_data;
+            // rte_free(wrapper);
+            ip_data = * ip_data_p;
 
             ctx->loop_state = 5;
             tcp_input_backend(p);
@@ -518,7 +524,7 @@ struct rte_mempool* ip_thread_create_pktmbuf_pool_rx(int id)
     LOG_DEBUG("pool name: %s\n", pool_name);
     
     struct rte_mempool* ret = rte_pktmbuf_pool_create(/* "pktmbuf_pool_rx" */pool_name,
-			    /* tcp_thread_num * 512 */32768 - 1, 512, 0, 
+			    /* tcp_thread_num * 512 */32768 - 1, 512, sizeof(struct ip_globals), 
                 LWIP_MEM_ALIGN_SIZE(sizeof(struct pbuf)) + RTE_MBUF_DEFAULT_BUF_SIZE,
                 rte_socket_id());
 

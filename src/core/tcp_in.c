@@ -63,6 +63,7 @@
 
 #include <string.h>
 #include <rte_malloc.h>
+#include <rte_mbuf.h>
 
 #ifdef LWIP_HOOK_FILENAME
 #include LWIP_HOOK_FILENAME
@@ -730,16 +731,19 @@ tcp_input_frontend(struct pbuf *p, struct netif *inp)
 
   ip_thread_ts[4] = get_mono_tnesc();
 
-  struct tcp_thread_input_pkt_wrapper*  wrapper  = 
-      rte_malloc("obj", sizeof(struct tcp_thread_input_pkt_wrapper), 0);
-  if  (wrapper == NULL)
-  {   LOG_INFO("malloc tcp_thread_input_pkt_wrapper failed\n");
-      goto dropped;
-  }
+  // struct tcp_thread_input_pkt_wrapper*  wrapper  = 
+  //     rte_malloc("obj", sizeof(struct tcp_thread_input_pkt_wrapper), 0);
+  // if  (wrapper == NULL)
+  // {   LOG_INFO("malloc tcp_thread_input_pkt_wrapper failed\n");
+  //     goto dropped;
+  // }
+  assert(p->type_internal == PBUF_RTE_MBUF_RX);
+  struct ip_globals* ip_data_p = rte_mbuf_to_priv(p->related_mbuf);
 
   LOG_DEBUG("tcp_input_frontend: 2.1\n");
-  wrapper->ip_data = ip_data;
-  wrapper->p = p;
+  // wrapper->ip_data = ip_data;
+  // wrapper->p = p;
+  *ip_data_p = ip_data;
 
   // LOG_DEBUG("tcp_input_frontend: 2.2\n");
   // // put pkt into ctx's ring
@@ -752,7 +756,7 @@ tcp_input_frontend(struct pbuf *p, struct netif *inp)
 
   ip_thread_ts[5] = get_mono_tnesc();
 
-  int ret = tcp_thread_input_ring_enqueue(hash_code, ip_thread_identify_id - 1, wrapper);
+  int ret = tcp_thread_input_ring_enqueue(hash_code, ip_thread_identify_id - 1, /* wrapper */p);
   if  (ret  != 0)
   {   LOG_INFO("input_pkt_ring full.\n");
       // just goto drop;
