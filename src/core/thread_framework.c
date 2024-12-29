@@ -147,6 +147,7 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id
     uint64_t pkt_cnt = 0;
     uint64_t prev_ts = 0;
     int last_poll_pkt_num = 0;
+    uint64_t poll_cnt = 0;
 
 #define MAX_EPOLL_EVENT_NUM 5
     struct epoll_event events[MAX_EPOLL_EVENT_NUM];
@@ -263,16 +264,24 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id
         tx_flush();
 
         ctx->loop_state = 9;
-        uint64_t now = get_now();
-        if (now - prev_ts > 1000000000UL)
+
+        if (++poll_cnt % 1000 == 0)
         {
+            uint64_t now = get_now();
+            if (now - prev_ts > 1000000000UL)
+            {
 
-            // LOG_INFO("tcp_thread_run: 3: ctx_id: %d, pkt_cnt: %lu, input_ring num: %d\n", 
-            //         ctx->id, pkt_cnt, );
-            LOG_INFO("tcp_thread_run: 3: ctx_id: %d, pkt_cnt: %lu\n",
-                     ctx->id, pkt_cnt);
+                // LOG_INFO("tcp_thread_run: 3: ctx_id: %d, pkt_cnt: %lu, input_ring num: %d\n",
+                //         ctx->id, pkt_cnt, );
+                LOG_INFO("tcp_thread_run: 3: ctx_id: %d, pkt_cnt: %lu, last_poll_pkt_num: %d\n",
+                         ctx->id, pkt_cnt, last_poll_pkt_num);
+                for (int i = 0; i < g_ip_thread_num; i++)
+                {   LOG_INFO("input_ring_num, tcp_tid: %d, ip_tid: %d, num: %d\n",
+                            ctx->id, i, rte_ring_count(ctx->input_pkt_rings[i]));
+                }
 
-            prev_ts = now;
+                prev_ts = now;
+            }
         }
 
         ctx->loop_state = 10;
