@@ -466,13 +466,14 @@ int
 
         // netif_rx_test_sleep(nb_rx, ctx->id);
 
-        if  (++cnt % 10000 == 0)
+        if  (++cnt % 1000 == 0)
         {
             // usleep(1);
             uint64_t now = get_now();
             if  (now  - prev_ts > 1000000000UL)
             {
-                LOG_INFO("ip_thread_run: 3: ctx_id: %d, pkt_cnt: %lu\n", ctx->id, pkt_cnt);
+                LOG_INFO("ip_thread_run: 3: ctx_id: %d, pkt_cnt: %lu, nb_rx: %d\n", 
+                        ctx->id, pkt_cnt, nb_rx);
                 prev_ts = now;
             }
         }
