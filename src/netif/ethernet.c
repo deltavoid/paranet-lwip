@@ -89,7 +89,7 @@ ethernet_input(struct pbuf *p, struct netif *netif)
 
   LOG_DEBUG("ethernet_input: 1\n");
 
-  LWIP_ASSERT_CORE_LOCKED();
+  // LWIP_ASSERT_CORE_LOCKED();
 
   if (p->len <= SIZEOF_ETH_HDR) {
     /* a packet with only an ethernet header (or less) is not valid for us */
@@ -114,6 +114,8 @@ ethernet_input(struct pbuf *p, struct netif *netif)
                lwip_htons(ethhdr->type)));
 
   type = ethhdr->type;
+
+#undef ETHARP_SUPPORT_VLAN
 #if ETHARP_SUPPORT_VLAN
   if (type == PP_HTONS(ETHTYPE_VLAN)) {
     struct eth_vlan_hdr *vlan = (struct eth_vlan_hdr *)(((char *)ethhdr) + SIZEOF_ETH_HDR);
@@ -142,6 +144,7 @@ ethernet_input(struct pbuf *p, struct netif *netif)
   }
 #endif /* ETHARP_SUPPORT_VLAN */
 
+#undef LWIP_ARP_FILTER_NETIF
 #if LWIP_ARP_FILTER_NETIF
   netif = LWIP_ARP_FILTER_NETIF_FN(p, netif, lwip_htons(type));
 #endif /* LWIP_ARP_FILTER_NETIF*/

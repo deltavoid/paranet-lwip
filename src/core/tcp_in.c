@@ -672,6 +672,8 @@ tcp_input_frontend(struct pbuf *p, struct netif *inp)
   
   struct tcp_hdr *tcphdr = (struct tcp_hdr *)p->payload;
 
+  ip_thread_ts[3] = get_mono_tnesc();
+
   LWIP_UNUSED_ARG(inp);
 
   LOG_DEBUG("tcp_input_frontend: 1, begin\n");
@@ -725,6 +727,9 @@ tcp_input_frontend(struct pbuf *p, struct netif *inp)
   // struct tcp_thread_ctx* ctx = get_tcp_thread_ctx_by_id(hash_code);
   // LOG_DEBUG("tcp_input_frontend: 2, ctx id: %d\n", ctx->id);
 
+
+  ip_thread_ts[4] = get_mono_tnesc();
+
   struct tcp_thread_input_pkt_wrapper*  wrapper  = 
       rte_malloc("obj", sizeof(struct tcp_thread_input_pkt_wrapper), 0);
   if  (wrapper == NULL)
@@ -745,6 +750,7 @@ tcp_input_frontend(struct pbuf *p, struct netif *inp)
   //     goto dropped;
   // }
 
+  ip_thread_ts[5] = get_mono_tnesc();
 
   int ret = tcp_thread_input_ring_enqueue(hash_code, ip_thread_identify_id - 1, wrapper);
   if  (ret  != 0)

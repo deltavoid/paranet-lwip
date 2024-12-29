@@ -453,6 +453,8 @@ unsigned short netif_poll_once(struct netif* _netif_p, int queue_id, int64_t* pr
 void netif_rx_test_sleep(unsigned short nb_rx, uint16_t queue_id);
 
 
+_Thread_local int64_t ip_thread_ts[10];
+
 
 int 
 /* void*  */ip_thread_run(void* arg)
@@ -488,7 +490,7 @@ int
                 LOG_INFO("ip_thread_run: 3: ctx_id: %d, pkt_cnt: %lu, nb_rx: %d, enqueue_num: %ld, input_cnt: %ld\n", 
                         ctx->id, pkt_cnt, nb_rx, input_enqueue_num, process_cnt);
                 
-                for (int j = 1; j <= 2; j++)
+                for (int j = 1; j <= 6; j++)
                 {
                     LOG_INFO("poll_once stage %d duration avg ns: %lf\n", 
                             j, (double)process_time[j] / process_cnt);

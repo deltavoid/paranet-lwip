@@ -114,6 +114,8 @@ static inline struct tcp_thread_ctx* get_tcp_thread_ctx_default()
     return &tcp_thread_ctxs[thread_tx_queue_id - 1];
 }
 
+extern _Thread_local int64_t ip_thread_ts[10];
+
 
 extern _Thread_local volatile int ip_thread_identify_id;
 
@@ -131,6 +133,8 @@ extern _Thread_local uint64_t input_enqueue_num, event_fd_notify_num;
 
 
 void thread_framework_init(int ip_thread_num, int tcp_thread_num, struct netif* nif);
+
+
 
 
 static inline long get_mono_tnesc()

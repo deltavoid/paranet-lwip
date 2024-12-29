@@ -57,6 +57,7 @@
 #include "lwip/stats.h"
 #include "lwip/prot/iana.h"
 #include "lwip/logging.h"
+#include "lwip/thread_framework.h"
 
 #include <string.h>
 
@@ -771,6 +772,8 @@ ip4_input_scaffolding(struct pbuf *p, struct netif *inp)
   struct netif *netif;
   u16_t iphdr_hlen;
   u16_t iphdr_len;
+
+  ip_thread_ts[2] = get_mono_tnesc();
 
 #undef IP_ACCEPT_LINK_LAYER_ADDRESSING
 // #undef LWIP_IGMP
