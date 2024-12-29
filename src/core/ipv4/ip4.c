@@ -872,6 +872,29 @@ ip4_input_scaffolding(struct pbuf *p, struct netif *inp)
   ip_addr_copy_from_ip4(ip_data.current_iphdr_dest, iphdr->dest);
   ip_addr_copy_from_ip4(ip_data.current_iphdr_src, iphdr->src);
 
+
+  if (ip4_addr_cmp(ip4_current_dest_addr(), netif_ip4_addr(inp)))
+  {
+    LOG_DEBUG("ip4_input_scaffolding: 7.1 match ip addr\n");
+
+    netif = inp;
+    if (IPH_PROTO(iphdr) == IP_PROTO_TCP)
+    {
+      LOG_DEBUG("ip4_input_scaffolding: 24\n");
+      ip_data.current_netif = netif;
+      ip_data.current_input_netif = inp;
+      ip_data.current_ip4_header = iphdr;
+      ip_data.current_ip_header_tot_len = IPH_HL_BYTES(iphdr);
+
+      LOG_DEBUG("ip4_input_scaffolding: 26\n");
+      pbuf_remove_header(p, iphdr_hlen); /* Move to payload, no check necessary. */
+
+      tcp_input_frontend(p, inp);
+
+      return ERR_OK;
+    }
+  }
+
   LOG_DEBUG("ip4_input_scaffolding: 8\n");
   /* match packet against an interface, i.e. is this packet for us? */
   if (ip4_addr_ismulticast(ip4_current_dest_addr())) {
