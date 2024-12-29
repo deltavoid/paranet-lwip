@@ -807,8 +807,8 @@ tcp_input_backend(struct pbuf *p)
 
   PERF_START;
 
-  TCP_STATS_INC(tcp.recv);
-  MIB2_STATS_INC(mib2.tcpinsegs);
+  // TCP_STATS_INC(tcp.recv);
+  // MIB2_STATS_INC(mib2.tcpinsegs);
 
   // tcphdr = (struct tcp_hdr *)p->payload;
   // tcp_in_var.tcphdr = (struct tcp_hdr *)p->payload;
