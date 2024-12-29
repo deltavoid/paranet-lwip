@@ -83,7 +83,7 @@ int tcp_thread_input_ring_enqueue(int tcp_tid, int ip_tid, void* data)
     struct rte_ring* ring = ctx->input_pkt_rings[ip_tid];
     int ret = rte_ring_enqueue(ring, data);
 
-    // input_enqueue_num++;
+    input_enqueue_num++;
     // event_fd_notify_num += tcp_thread_input_ring_notify(ctx);
     return ret;
 }
@@ -481,8 +481,9 @@ int
             uint64_t now = get_now();
             if  (now  - prev_ts > 1000000000UL)
             {
-                LOG_INFO("ip_thread_run: 3: ctx_id: %d, pkt_cnt: %lu, nb_rx: %d, enqueue_num: %ld, notify_num: %ld, ratio e/n: %lf\n", 
-                        ctx->id, pkt_cnt, nb_rx, input_enqueue_num, event_fd_notify_num, (double)input_enqueue_num / event_fd_notify_num);
+                LOG_INFO("ip_thread_run: 3: ctx_id: %d, pkt_cnt: %lu, nb_rx: %d, enqueue_num: %ld\n", 
+                        ctx->id, pkt_cnt, nb_rx, input_enqueue_num);
+                input_enqueue_num = 0;
                 prev_ts = now;
             }
         }
