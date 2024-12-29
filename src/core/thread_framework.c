@@ -275,10 +275,10 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id
                 //         ctx->id, pkt_cnt, );
                 LOG_INFO("tcp_thread_run: 3: ctx_id: %d, pkt_cnt: %lu, last_poll_pkt_num: %d\n",
                          ctx->id, pkt_cnt, last_poll_pkt_num);
-                for (int i = 0; i < g_ip_thread_num; i++)
-                {   LOG_INFO("input_ring_num, tcp_tid: %d, ip_tid: %d, num: %d\n",
-                            ctx->id, i, rte_ring_count(ctx->input_pkt_rings[i]));
-                }
+                // for (int i = 0; i < g_ip_thread_num; i++)
+                // {   LOG_INFO("input_ring_num, tcp_tid: %d, ip_tid: %d, num: %d\n",
+                //             ctx->id, i, rte_ring_count(ctx->input_pkt_rings[i]));
+                // }
 
                 prev_ts = now;
             }
