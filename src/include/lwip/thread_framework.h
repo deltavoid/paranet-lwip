@@ -133,7 +133,12 @@ extern _Thread_local uint64_t input_enqueue_num, event_fd_notify_num;
 void thread_framework_init(int ip_thread_num, int tcp_thread_num, struct netif* nif);
 
 
-
+static inline long get_mono_tnesc()
+{
+    struct timespec ts; 
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ts.tv_sec * 1000000000L + ts.tv_nsec;
+}
 
 
 #endif // THREAD_FRAMEWORK_H

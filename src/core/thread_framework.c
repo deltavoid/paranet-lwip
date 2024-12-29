@@ -447,7 +447,9 @@ struct rte_mempool* tcp_create_pktmbuf_pool_rx(int tcp_thread_num)
 _Thread_local volatile int ip_thread_identify_id = 0; // default 0, ip thread set it to sepcific id;
 
 
-unsigned short netif_poll_once(struct netif* _netif_p, int queue_id);
+// unsigned short netif_poll_once(struct netif* _netif_p, int queue_id);
+unsigned short netif_poll_once(struct netif* _netif_p, int queue_id, int64_t* process_cnt_p, int64_t* process_time_p);
+
 void netif_rx_test_sleep(unsigned short nb_rx, uint16_t queue_id);
 
 
@@ -460,14 +462,16 @@ int
     uint64_t prev_ts = 0;
     uint64_t pkt_cnt = 0;
     // death loop  poll pkt only wait process exit
-
+    int64_t process_cnt = 0;
+    int64_t process_time[10];
     ip_thread_identify_id = ctx->id + 1;
 
     while (ctx->running)
     {
         // LOG_DEBUG("ip_thread_run: 2\n");
 
-        unsigned short nb_rx = netif_poll_once(ctx->_netif, ctx->id);
+
+        unsigned short nb_rx = netif_poll_once(ctx->_netif, ctx->id, &process_cnt, process_time);
         pkt_cnt += nb_rx;
 
         tx_flush();
@@ -481,9 +485,18 @@ int
             uint64_t now = get_now();
             if  (now  - prev_ts > 1000000000UL)
             {
-                LOG_INFO("ip_thread_run: 3: ctx_id: %d, pkt_cnt: %lu, nb_rx: %d, enqueue_num: %ld\n", 
-                        ctx->id, pkt_cnt, nb_rx, input_enqueue_num);
+                LOG_INFO("ip_thread_run: 3: ctx_id: %d, pkt_cnt: %lu, nb_rx: %d, enqueue_num: %ld, input_cnt: %ld\n", 
+                        ctx->id, pkt_cnt, nb_rx, input_enqueue_num, process_cnt);
+                
+                for (int j = 1; j <= 2; j++)
+                {
+                    LOG_INFO("poll_once stage %d duration avg ns: %lf\n", 
+                            j, (double)process_time[j] / process_cnt);
+                    process_time[j] = 0;
+                }
+
                 input_enqueue_num = 0;
+                process_cnt = 0;
                 prev_ts = now;
             }
         }
