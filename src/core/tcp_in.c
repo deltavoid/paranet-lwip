@@ -970,6 +970,8 @@ tcp_input_backend(struct pbuf *p)
 
   if (pcb == NULL) {
 
+    rte_spinlock_lock(&tcp_global_lock);
+
     for (pcb = tcp_before_estab_pcbs; pcb != NULL; pcb = pcb->next) {
 
       /* check if PCB is bound to specific netif */
@@ -993,6 +995,7 @@ tcp_input_backend(struct pbuf *p)
         }
       }
     }
+    rte_spinlock_unlock(&tcp_global_lock);
   }
   
 
@@ -1040,6 +1043,7 @@ tcp_input_backend(struct pbuf *p)
     /* Finally, if we still did not get a match, we check all PCBs that
        are LISTENing for incoming connections. */
     LOG_DEBUG("tcp_input_backend: 4.4, check for tcp_listen_pcbs\n");
+    rte_spinlock_lock(&tcp_global_lock);
     prev = NULL;
     for (lpcb = tcp_listen_pcbs.listen_pcbs; lpcb != NULL; lpcb = lpcb->next) {
       /* check if PCB is bound to specific netif */
@@ -1109,8 +1113,10 @@ tcp_input_backend(struct pbuf *p)
       }
       pbuf_free(p);
       LOG_DEBUG("tcp_input_backend: 4.6, end from tcp_listen_input\n");
+      rte_spinlock_unlock(&tcp_global_lock);
       return;
     }
+    rte_spinlock_unlock(&tcp_global_lock);
   }
 
   LOG_DEBUG("tcp_input_backend: 5\n");
@@ -1637,9 +1643,13 @@ tcp_process(struct tcp_pcb *pcb)
         pcb->snd_wnd = tcphdr->wnd;
         pcb->snd_wnd_max = pcb->snd_wnd;
         pcb->snd_wl1 = seqno - 1; /* initialise to seqno - 1 to force window update */
-        pcb->state = ESTABLISHED;
+        
         LOG_DEBUG("tcp_process: 2.1, case SYN_SENT, mv pcb from tcp_before_estab_pcbs to tcp_active_pcbs\n");
+        rte_spinlock_lock(&tcp_global_lock);
         TCP_RMV(&tcp_before_estab_pcbs, pcb);
+        rte_spinlock_unlock(&tcp_global_lock);
+
+        pcb->state = ESTABLISHED;
         TCP_REG_ACTIVE(pcb);
 
 #if TCP_CALCULATE_EFF_SEND_MSS
@@ -1706,8 +1716,11 @@ tcp_process(struct tcp_pcb *pcb)
         if (TCP_SEQ_BETWEEN(ackno, pcb->lastack + 1, pcb->snd_nxt)) {
           
           LOG_DEBUG("tcp_process: 2.2, case SYN_RCVD, rm pcb from tcp_before_estab_pcbs\n");
-          TCP_RMV(&tcp_before_estab_pcbs, pcb);
           
+          rte_spinlock_lock(&tcp_global_lock);
+          TCP_RMV(&tcp_before_estab_pcbs, pcb);
+          rte_spinlock_unlock(&tcp_global_lock);
+
           pcb->state = ESTABLISHED;
           LOG_DEBUG("tcp_process: 2.2, case SYN_RCVD, insert pcb into tcp_active_pcbs\n");
           TCP_REG_ACTIVE(pcb);

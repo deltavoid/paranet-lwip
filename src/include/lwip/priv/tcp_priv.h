@@ -50,6 +50,7 @@
 #include "lwip/ip6.h"
 #include "lwip/ip6_addr.h"
 #include "lwip/prot/tcp.h"
+#include <rte_spinlock.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -341,6 +342,8 @@ extern _Thread_local struct tcp_pcb *tcp_active_pcbs;  /* List of all TCP PCBs t
               data. */
 extern _Thread_local struct tcp_pcb *tcp_tw_pcbs;      /* List of all TCP PCBs in TIME-WAIT. */
 extern struct tcp_pcb *tcp_before_estab_pcbs;
+extern rte_spinlock_t tcp_global_lock;
+
 
 
 #define NUM_TCP_PCB_LISTS_NO_TIME_WAIT  3

@@ -187,7 +187,10 @@ _Thread_local struct tcp_pcb *tcp_active_pcbs;
 // todo, thread_local 
 _Thread_local struct tcp_pcb *tcp_tw_pcbs;
 
+rte_spinlock_t tcp_global_lock;
 
+
+// access to tcp_before_estab_pcbs and tcp_listen_pcbs shoule add tcp_global_lock
 // Lists of PCBs before ESTABLISH state, e.g SYN_RECV, SYN_SENT, global list
 struct tcp_pcb *tcp_before_estab_pcbs;
 
@@ -217,6 +220,9 @@ tcp_init(void)
 #ifdef LWIP_RAND
   tcp_port = TCP_ENSURE_LOCAL_PORT_RANGE(LWIP_RAND());
 #endif /* LWIP_RAND */
+
+    rte_spinlock_init(&tcp_global_lock);
+
 }
 
 /** Free a tcp pcb */
@@ -257,7 +263,9 @@ void tcp_tmr(void)
   if (ctx->id == 0)
   {
     LOG_INFO("tcp_fasttmr process tcp_before_estab_pcbs\n");
+    rte_spinlock_lock(&tcp_global_lock);
     tcp_fasttmr1(tcp_before_estab_pcbs);
+    rte_spinlock_unlock(&tcp_global_lock);
   }
 
   if (++tcp_timer & 1)
@@ -270,7 +278,9 @@ void tcp_tmr(void)
     if (ctx->id == 0)
     {
       LOG_INFO("timer process tcp_before_estab_pcbs\n");
+      rte_spinlock_lock(&tcp_global_lock);
       tcp_slowtmr_process_active(tcp_before_estab_pcbs);
+      rte_spinlock_unlock(&tcp_global_lock);
     }
   }
 
@@ -1237,7 +1247,11 @@ LOG_DEBUG("tcp_connect: 6\n");
       TCP_RMV(&tcp_bound_pcbs, pcb);
     }
     // TCP_REG_ACTIVE(pcb);
+    
+    rte_spinlock_lock(&tcp_global_lock);
     TCP_REG(&tcp_before_estab_pcbs, pcb);
+    rte_spinlock_unlock(&tcp_global_lock);
+
     MIB2_STATS_INC(mib2.tcpactiveopens);
     tcp_active_pcbs_changed = 1;
 
