@@ -677,9 +677,9 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
       //   LWIP_DEBUGF(TCP_OUTPUT_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("tcp_write : could not allocate memory for pbuf copy size %"U16_F"\n", seglen));
       //   goto memerr;
       // }
-      tcp_thread_process_ts[13] = get_mono_tnesc();
+      tcp_thread_process_ts[11] = get_mono_tnesc();
       p = pbuf_alloc(PBUF_TRANSPORT, seglen + optlen, PBUF_RTE_MBUF_TX);
-      tcp_thread_process_ts[14] = get_mono_tnesc();
+      tcp_thread_process_ts[12] = get_mono_tnesc();
       if  (p == NULL)
       {
         LOG_INFO("tcp_write: 20\n");
@@ -1472,7 +1472,9 @@ tcp_output(struct tcp_pcb *pcb)
       TCPH_SET_FLAG(seg->tcphdr, TCP_ACK);
     }
 
+    tcp_thread_process_ts[16] = get_mono_tnesc();
     err = tcp_output_segment(seg, pcb, netif);
+    tcp_thread_process_ts[19] = get_mono_tnesc();
     if (err != ERR_OK) {
       /* segment could not be sent, for whatever reason */
       tcp_set_flags(pcb, TF_NAGLEMEMERR);
@@ -1532,6 +1534,7 @@ tcp_output(struct tcp_pcb *pcb)
 output_done:
   tcp_clear_flags(pcb, TF_NAGLEMEMERR);
 
+  tcp_thread_process_ts[20] = get_mono_tnesc();
   LOG_DEBUG("tcp_output: 3, end\n");
   return ERR_OK;
 }
@@ -1720,10 +1723,12 @@ tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb, struct netif *netif
 #endif /* CHECKSUM_GEN_TCP */
   TCP_STATS_INC(tcp.xmit);
 
+  tcp_thread_process_ts[17] = get_mono_tnesc();
   NETIF_SET_HINTS(netif, &(pcb->netif_hints));
   err = ip_output_if(seg->p, &pcb->local_ip, &pcb->remote_ip, pcb->ttl,
                      pcb->tos, IP_PROTO_TCP, netif);
   NETIF_RESET_HINTS(netif);
+  tcp_thread_process_ts[18] = get_mono_tnesc();
 
 #if TCP_CHECKSUM_ON_COPY
   if (seg_chksum_was_swapped) {

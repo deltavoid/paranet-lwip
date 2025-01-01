@@ -970,7 +970,7 @@ tcp_input_backend(struct pbuf *p)
     prev = pcb;
   }
 
-  tcp_thread_process_ts[5] = get_mono_tnesc();
+  // tcp_thread_process_ts[5] = get_mono_tnesc();
   if (pcb == NULL) {
 
     rte_spinlock_lock(&tcp_global_lock);
@@ -1003,7 +1003,7 @@ tcp_input_backend(struct pbuf *p)
   
 
 
-  tcp_thread_process_ts[6] = get_mono_tnesc();
+  // tcp_thread_process_ts[6] = get_mono_tnesc();
   LOG_DEBUG("tcp_input_backend: 4\n");
   if (pcb == NULL) {
 
@@ -1122,7 +1122,7 @@ tcp_input_backend(struct pbuf *p)
     rte_spinlock_unlock(&tcp_global_lock);
   }
 
-  tcp_thread_process_ts[7] = get_mono_tnesc();
+  tcp_thread_process_ts[5] = get_mono_tnesc();
   LOG_DEBUG("tcp_input_backend: 5\n");
 
 #if TCP_INPUT_DEBUG
@@ -1180,12 +1180,12 @@ tcp_input_backend(struct pbuf *p)
       }
     }
 
-    tcp_thread_process_ts[8] = get_mono_tnesc();
+    tcp_thread_process_ts[6] = get_mono_tnesc();
     LOG_DEBUG("tcp_input_backend: 6.3\n");
     tcp_input_pcb = pcb;
     err = tcp_process(pcb);
     LOG_DEBUG("tcp_input_backend: 6.4\n");
-    tcp_thread_process_ts[9] = get_mono_tnesc();
+    tcp_thread_process_ts[7] = get_mono_tnesc();
     /* A return value of ERR_ABRT means that tcp_abort() was called
        and that the pcb has been freed. If so, we don't do anything. */
     if (err != ERR_ABRT) {
@@ -1250,9 +1250,9 @@ tcp_input_backend(struct pbuf *p)
           // recv handler
           LOG_DEBUG("tcp_input_backend: 6.5\n");
           /* Notify application that data has been received. */
-          tcp_thread_process_ts[10] = get_mono_tnesc();
+          tcp_thread_process_ts[8] = get_mono_tnesc();
           TCP_EVENT_RECV(pcb, recv_data, ERR_OK, err);
-          tcp_thread_process_ts[17] = get_mono_tnesc();
+          tcp_thread_process_ts[14] = get_mono_tnesc();
           LOG_DEBUG("tcp_input_backend: 6.6\n");
           if (err == ERR_ABRT) {
 #if TCP_QUEUE_OOSEQ && LWIP_WND_SCALE
@@ -1305,10 +1305,10 @@ tcp_input_backend(struct pbuf *p)
           goto aborted;
         }
 
-        tcp_thread_process_ts[18] = get_mono_tnesc();
+        tcp_thread_process_ts[15] = get_mono_tnesc();
         /* Try to send something out. */
         tcp_output(pcb);
-        tcp_thread_process_ts[19] = get_mono_tnesc();
+        tcp_thread_process_ts[20] = get_mono_tnesc();
 
 
 #if TCP_INPUT_DEBUG
@@ -1346,7 +1346,7 @@ aborted:
     pbuf_free(p);
   }
 
-  tcp_thread_process_ts[20] = get_mono_tnesc();
+  tcp_thread_process_ts[21] = get_mono_tnesc();
   LWIP_ASSERT("tcp_input: tcp_pcbs_sane()", tcp_pcbs_sane());
   PERF_STOP("tcp_input");
   LOG_DEBUG("tcp_input_backend: 8, end\n");

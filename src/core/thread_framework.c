@@ -89,8 +89,9 @@ int tcp_thread_input_ring_enqueue(int tcp_tid, int ip_tid, void* data)
 }
 
 
-_Thread_local int64_t tcp_thread_process_ts[30];
-#define tcp_thread_process_ts_num 21
+#define tcp_thread_process_ts_num 22
+_Thread_local int64_t tcp_thread_process_ts[tcp_thread_process_ts_num + 1];
+
 
 #define TCP_THREAD_RUN_MAX_PKT_ONCE 128
 
@@ -142,7 +143,7 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id
             tcp_thread_process_ts[2] = get_mono_tnesc();
             tcp_input_backend(p);
             // pbuf_free(p);
-            tcp_thread_process_ts[21] = get_mono_tnesc();
+            tcp_thread_process_ts[22] = get_mono_tnesc();
             ctx->loop_state = 6;
 
             (*pkt_num_cnt_p)++;
@@ -177,7 +178,7 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id
     int last_poll_pkt_num = 0;
     uint64_t poll_cnt = 0;
     int64_t pkt_process_cnt = 0;
-    int64_t pkt_process_time[30];
+    int64_t pkt_process_time[tcp_thread_process_ts_num + 1];
 
 #define MAX_EPOLL_EVENT_NUM 5
     // struct epoll_event events[MAX_EPOLL_EVENT_NUM];

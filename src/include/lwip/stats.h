@@ -321,7 +321,8 @@ void stats_init(void);
 #define STATS_INC_USED(x, y, type)
 #endif /* LWIP_STATS */
 
-#if TCP_STATS
+
+#if /* TCP_STATS */ false
 #define TCP_STATS_INC(x) STATS_INC(x)
 #define TCP_STATS_DISPLAY() stats_display_proto(&lwip_stats.tcp, "TCP")
 #else
