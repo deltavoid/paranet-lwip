@@ -445,6 +445,7 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
   u16_t mss_local;
 
   LOG_DEBUG("tcp_write: 1, begin\n");
+  tcp_thread_ts_check(9);
 
   LWIP_ERROR("tcp_write: invalid pcb", pcb != NULL, return ERR_ARG);
 
@@ -677,9 +678,11 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
       //   LWIP_DEBUGF(TCP_OUTPUT_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("tcp_write : could not allocate memory for pbuf copy size %"U16_F"\n", seglen));
       //   goto memerr;
       // }
-      tcp_thread_process_ts[11] = get_mono_tnesc();
+      // tcp_thread_process_ts[11] = get_mono_tnesc();
+      tcp_thread_ts_check(10);
       p = pbuf_alloc(PBUF_TRANSPORT, seglen + optlen, PBUF_RTE_MBUF_TX);
-      tcp_thread_process_ts[12] = get_mono_tnesc();
+      // tcp_thread_process_ts[12] = get_mono_tnesc();
+      tcp_thread_ts_check(11);
       if  (p == NULL)
       {
         LOG_INFO("tcp_write: 20\n");
@@ -1355,6 +1358,7 @@ tcp_output(struct tcp_pcb *pcb)
 #endif /* TCP_CWND_DEBUG */
 
   LOG_DEBUG("tcp_output: 1, test, enter\n");
+  tcp_thread_ts_check(14);
 
 
 
@@ -1472,9 +1476,10 @@ tcp_output(struct tcp_pcb *pcb)
       TCPH_SET_FLAG(seg->tcphdr, TCP_ACK);
     }
 
-    tcp_thread_process_ts[16] = get_mono_tnesc();
+    // tcp_thread_process_ts[16] = get_mono_tnesc();
     err = tcp_output_segment(seg, pcb, netif);
-    tcp_thread_process_ts[25] = get_mono_tnesc();
+    // tcp_thread_process_ts[25] = get_mono_tnesc();
+    tcp_thread_ts_check(25);
     if (err != ERR_OK) {
       /* segment could not be sent, for whatever reason */
       tcp_set_flags(pcb, TF_NAGLEMEMERR);
@@ -1534,7 +1539,7 @@ tcp_output(struct tcp_pcb *pcb)
 output_done:
   tcp_clear_flags(pcb, TF_NAGLEMEMERR);
 
-  tcp_thread_process_ts[26] = get_mono_tnesc();
+  // tcp_thread_process_ts[26] = get_mono_tnesc();
   LOG_DEBUG("tcp_output: 3, end\n");
   return ERR_OK;
 }
@@ -1580,6 +1585,8 @@ tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb, struct netif *netif
 #if TCP_CHECKSUM_ON_COPY
   int seg_chksum_was_swapped = 0;
 #endif
+
+  tcp_thread_ts_check(15);
 
   LWIP_ASSERT("tcp_output_segment: invalid seg", seg != NULL);
   LWIP_ASSERT("tcp_output_segment: invalid pcb", pcb != NULL);
@@ -1723,12 +1730,15 @@ tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb, struct netif *netif
 #endif /* CHECKSUM_GEN_TCP */
   TCP_STATS_INC(tcp.xmit);
 
-  tcp_thread_process_ts[17] = get_mono_tnesc();
+  // tcp_thread_process_ts[17] = get_mono_tnesc();
+  tcp_thread_ts_check(16);
   NETIF_SET_HINTS(netif, &(pcb->netif_hints));
   err = ip_output_if(seg->p, &pcb->local_ip, &pcb->remote_ip, pcb->ttl,
                      pcb->tos, IP_PROTO_TCP, netif);
   NETIF_RESET_HINTS(netif);
-  tcp_thread_process_ts[24] = get_mono_tnesc();
+  // tcp_thread_process_ts[24] = get_mono_tnesc();
+  tcp_thread_ts_check(24);
+
 
 #if TCP_CHECKSUM_ON_COPY
   if (seg_chksum_was_swapped) {

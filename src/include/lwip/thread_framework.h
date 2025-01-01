@@ -70,8 +70,6 @@ struct tcp_thread_ctx {
 int tcp_thread_input_ring_enqueue(int tcp_tid, int ip_tid, void* data);
 
 
-extern _Thread_local int64_t tcp_thread_process_ts[];
-
 
 // extern struct rte_mempool *pktmbuf_pool_tcp_tx;
 // struct rte_mempool* tcp_create_pktmbuf_pool_tcp_tx(int tcp_thread_num);
@@ -145,6 +143,13 @@ static inline long get_mono_tnesc()
     struct timespec ts; 
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return ts.tv_sec * 1000000000L + ts.tv_nsec;
+}
+
+extern _Thread_local int64_t tcp_thread_process_ts[];
+
+static inline void tcp_thread_ts_check(int i)
+{
+    tcp_thread_process_ts[i] = get_mono_tnesc();
 }
 
 

@@ -49,6 +49,7 @@
 #include "lwip/ip.h"
 #include "lwip/snmp.h"
 #include "lwip/logging.h"
+#include "lwip/thread_framework.h"
 
 #include <string.h>
 
@@ -282,6 +283,8 @@ ethernet_output(struct netif * netif, struct pbuf * p,
                 u16_t eth_type) {
   struct eth_hdr *ethhdr;
   u16_t eth_type_be = lwip_htons(eth_type);
+
+  tcp_thread_ts_check(19);
 
 #if ETHARP_SUPPORT_VLAN && defined(LWIP_HOOK_VLAN_SET)
   s32_t vlan_prio_vid = LWIP_HOOK_VLAN_SET(netif, p, src, dst, eth_type);

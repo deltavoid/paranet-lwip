@@ -54,6 +54,7 @@
 #include "lwip/autoip.h"
 #include "lwip/prot/iana.h"
 #include "netif/ethernet.h"
+#include "lwip/thread_framework.h"
 
 #include <string.h>
 
@@ -794,7 +795,9 @@ etharp_output(struct netif *netif, struct pbuf *q, const ip4_addr_t *ipaddr)
   struct eth_addr mcastaddr;
   const ip4_addr_t *dst_addr = ipaddr;
 
-  LWIP_ASSERT_CORE_LOCKED();
+  tcp_thread_ts_check(18);
+
+  // LWIP_ASSERT_CORE_LOCKED();
   LWIP_ASSERT("netif != NULL", netif != NULL);
   LWIP_ASSERT("q != NULL", q != NULL);
   LWIP_ASSERT("ipaddr != NULL", ipaddr != NULL);
@@ -893,6 +896,7 @@ etharp_output(struct netif *netif, struct pbuf *q, const ip4_addr_t *ipaddr)
   /* continuation for multicast/broadcast destinations */
   /* obtain source Ethernet address of the given interface */
   /* send packet directly on the link */
+  
   return ethernet_output(netif, q, (struct eth_addr *)(netif->hwaddr), dest, ETHTYPE_IP);
 }
 

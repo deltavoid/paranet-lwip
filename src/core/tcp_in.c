@@ -792,7 +792,8 @@ tcp_input_backend(struct pbuf *p)
   u8_t hdrlen_bytes;
   err_t err;
 
-  tcp_thread_process_ts[3] = get_mono_tnesc();
+  // tcp_thread_process_ts[3] = get_mono_tnesc();
+  tcp_thread_ts_check(3);
 
   // struct tcp_hdr *tcphdr = (struct tcp_hdr *)p->payload;
   tcp_in_var.tcphdr = (struct tcp_hdr *)p->payload;
@@ -934,7 +935,8 @@ tcp_input_backend(struct pbuf *p)
   /* Demultiplex an incoming segment. 
    * First, we check if it is destined for an active connection. 
    */
-  tcp_thread_process_ts[4] = get_mono_tnesc();
+  // tcp_thread_process_ts[4] = get_mono_tnesc();
+  tcp_thread_ts_check(4);
   prev = NULL;
 
   for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next) {
@@ -1122,7 +1124,8 @@ tcp_input_backend(struct pbuf *p)
     rte_spinlock_unlock(&tcp_global_lock);
   }
 
-  tcp_thread_process_ts[5] = get_mono_tnesc();
+  // tcp_thread_process_ts[5] = get_mono_tnesc();
+  tcp_thread_ts_check(5);
   LOG_DEBUG("tcp_input_backend: 5\n");
 
 #if TCP_INPUT_DEBUG
@@ -1180,12 +1183,13 @@ tcp_input_backend(struct pbuf *p)
       }
     }
 
-    tcp_thread_process_ts[6] = get_mono_tnesc();
+    // tcp_thread_process_ts[6] = get_mono_tnesc();
     LOG_DEBUG("tcp_input_backend: 6.3\n");
     tcp_input_pcb = pcb;
     err = tcp_process(pcb);
     LOG_DEBUG("tcp_input_backend: 6.4\n");
-    tcp_thread_process_ts[7] = get_mono_tnesc();
+    // tcp_thread_process_ts[7] = get_mono_tnesc();
+    tcp_thread_ts_check(7);
     /* A return value of ERR_ABRT means that tcp_abort() was called
        and that the pcb has been freed. If so, we don't do anything. */
     if (err != ERR_ABRT) {
@@ -1250,9 +1254,10 @@ tcp_input_backend(struct pbuf *p)
           // recv handler
           LOG_DEBUG("tcp_input_backend: 6.5\n");
           /* Notify application that data has been received. */
-          tcp_thread_process_ts[8] = get_mono_tnesc();
+          // tcp_thread_process_ts[8] = get_mono_tnesc();
           TCP_EVENT_RECV(pcb, recv_data, ERR_OK, err);
-          tcp_thread_process_ts[14] = get_mono_tnesc();
+          // tcp_thread_process_ts[14] = get_mono_tnesc();
+          tcp_thread_ts_check(13);
           LOG_DEBUG("tcp_input_backend: 6.6\n");
           if (err == ERR_ABRT) {
 #if TCP_QUEUE_OOSEQ && LWIP_WND_SCALE
@@ -1305,10 +1310,11 @@ tcp_input_backend(struct pbuf *p)
           goto aborted;
         }
 
-        tcp_thread_process_ts[15] = get_mono_tnesc();
+        // tcp_thread_process_ts[15] = get_mono_tnesc();
         /* Try to send something out. */
         tcp_output(pcb);
-        tcp_thread_process_ts[27] = get_mono_tnesc();
+        // tcp_thread_process_ts[27] = get_mono_tnesc();
+        tcp_thread_ts_check(26);
 
 
 #if TCP_INPUT_DEBUG
@@ -1346,7 +1352,7 @@ aborted:
     pbuf_free(p);
   }
 
-  tcp_thread_process_ts[28] = get_mono_tnesc();
+  // tcp_thread_process_ts[28] = get_mono_tnesc();
   LWIP_ASSERT("tcp_input: tcp_pcbs_sane()", tcp_pcbs_sane());
   PERF_STOP("tcp_input");
   LOG_DEBUG("tcp_input_backend: 8, end\n");
@@ -1581,6 +1587,8 @@ tcp_process(struct tcp_pcb *pcb)
    struct tcp_hdr* tcphdr = tcp_in_var.tcphdr;
 
   err = ERR_OK;
+
+  tcp_thread_ts_check(6);
 
   LWIP_ASSERT("tcp_process: invalid pcb", pcb != NULL);
 

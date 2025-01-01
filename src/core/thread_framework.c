@@ -89,7 +89,7 @@ int tcp_thread_input_ring_enqueue(int tcp_tid, int ip_tid, void* data)
 }
 
 
-#define tcp_thread_process_ts_num 29
+#define tcp_thread_process_ts_num 27
 _Thread_local int64_t tcp_thread_process_ts[tcp_thread_process_ts_num + 1];
 
 
@@ -116,7 +116,8 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id
     {
         void *obj_ptr;
         ctx->loop_state = 4;
-        tcp_thread_process_ts[0] = get_mono_tnesc();
+        // tcp_thread_process_ts[0] = get_mono_tnesc();
+        tcp_thread_ts_check(0);
         if (rte_ring_dequeue(ring, &obj_ptr) == 0)
         {
             // get object
@@ -125,7 +126,8 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id
             // struct tcp_thread_input_pkt_wrapper *wrapper =
             //     (struct tcp_thread_input_pkt_wrapper *)obj_ptr;
             // struct pbuf *p = wrapper->p;
-            tcp_thread_process_ts[1] = get_mono_tnesc();
+            // tcp_thread_process_ts[1] = get_mono_tnesc();
+            tcp_thread_ts_check(1);
             struct pbuf *p = (struct pbuf *)obj_ptr;
             // assert(p->type_internal == PBUF_RTE_MBUF_RX);
             // struct tcp_hdr *tcphdr = (struct tcp_hdr *)p->payload;
@@ -140,10 +142,12 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id
             ip_data = * ip_data_p;
 
             ctx->loop_state = 5;
-            tcp_thread_process_ts[2] = get_mono_tnesc();
+            // tcp_thread_process_ts[2] = get_mono_tnesc();
+            tcp_thread_ts_check(2);
             tcp_input_backend(p);
             // pbuf_free(p);
-            tcp_thread_process_ts[29] = get_mono_tnesc();
+            // tcp_thread_process_ts[29] = get_mono_tnesc();
+            tcp_thread_ts_check(27); 
             ctx->loop_state = 6;
 
             (*pkt_num_cnt_p)++;

@@ -1640,6 +1640,7 @@
  * ARP tables or many concurrent connections, it might be counterproductive
  * if you have a tiny ARP table or if there never are concurrent connections.
  */
+#undef LWIP_NETIF_HWADDRHINT
 #if !defined LWIP_NETIF_HWADDRHINT || defined __DOXYGEN__
 #define LWIP_NETIF_HWADDRHINT           0
 #endif
