@@ -72,7 +72,7 @@ int tcp_thread_input_ring_ack(struct tcp_thread_ctx *ctx, uint64_t* val_p)
 }
 
 
-_Thread_local uint64_t input_enqueue_num = 0, event_fd_notify_num = 0;
+// _Thread_local uint64_t input_enqueue_num = 0, event_fd_notify_num = 0;
 
 int tcp_thread_input_ring_enqueue(int tcp_tid, int ip_tid, void* data)
 {
@@ -83,7 +83,9 @@ int tcp_thread_input_ring_enqueue(int tcp_tid, int ip_tid, void* data)
     struct rte_ring* ring = ctx->input_pkt_rings[ip_tid];
     int ret = rte_ring_enqueue(ring, data);
 
-    input_enqueue_num++;
+    // input_enqueue_num++;
+    struct ip_thread_ctx* ip_ctx = get_ip_thread_ctx_by_id(ip_tid);
+    ip_ctx->enqueue_num++;
     // event_fd_notify_num += tcp_thread_input_ring_notify(ctx);
     return ret;
 }
@@ -517,6 +519,7 @@ int
 
         unsigned short nb_rx = netif_poll_once(ctx->_netif, ctx->id, &process_cnt, process_time);
         pkt_cnt += nb_rx;
+        ctx->input_num += nb_rx;
 
         tx_flush();
 
@@ -529,8 +532,8 @@ int
             uint64_t now = get_now();
             if  (now  - prev_ts > 1000000000UL)
             {
-                LOG_INFO("ip_thread_run: 3: ctx_id: %d, pkt_cnt: %lu, nb_rx: %d, enqueue_num: %ld, input_cnt: %ld\n", 
-                        ctx->id, pkt_cnt, nb_rx, input_enqueue_num, process_cnt);
+                LOG_INFO("ip_thread_run: 3: ctx_id: %d, pkt_cnt: %lu, nb_rx: %d\n", 
+                        ctx->id, pkt_cnt, nb_rx);
                 
                 for (int j = 1; j <= 6; j++)
                 {
@@ -539,7 +542,6 @@ int
                     process_time[j] = 0;
                 }
 
-                input_enqueue_num = 0;
                 process_cnt = 0;
                 prev_ts = now;
             }
@@ -602,7 +604,7 @@ struct tcp_thread_ctx tcp_thread_ctxs[TCP_THREAD_MAX_NUM];
 struct ip_thread_ctx ip_thread_ctxs[IP_THREAD_MAX_NUM];
 int g_tcp_thread_num, g_ip_thread_num; // global variable, init at process initialization, and should not be changed after that.
 
-uint64_t tcp_input_frontend_pkt_cnt[IP_THREAD_MAX_NUM];
+// uint64_t tcp_input_frontend_pkt_cnt[IP_THREAD_MAX_NUM];
 
 // struct ip_thread_ctx* get_ip_thread_ctx_default()
 // {

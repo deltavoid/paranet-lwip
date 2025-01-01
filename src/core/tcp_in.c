@@ -763,7 +763,7 @@ tcp_input_frontend(struct pbuf *p, struct netif *inp)
       goto dropped;
   }
 
-  tcp_input_frontend_pkt_cnt[ip_thread_identify_id - 1]++;
+  // tcp_input_frontend_pkt_cnt[ip_thread_identify_id - 1]++;
 
   // LOG_DEBUG("tcp_input_frontend: 2.3\n");
   // tcp_thread_input_ring_notify(ctx, 1);

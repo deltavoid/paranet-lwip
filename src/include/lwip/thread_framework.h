@@ -88,6 +88,8 @@ struct ip_thread_ctx {
     struct rte_mempool *pktmbuf_pool_rx;
     int id;
     volatile int running;
+    uint64_t input_num;
+    uint64_t enqueue_num;
 
 } __rte_cache_aligned;
 
@@ -103,7 +105,7 @@ struct ip_thread_ctx {
 extern struct tcp_thread_ctx tcp_thread_ctxs[TCP_THREAD_MAX_NUM];
 extern struct ip_thread_ctx ip_thread_ctxs[IP_THREAD_MAX_NUM];
 extern int g_tcp_thread_num, g_ip_thread_num; // global variable, init at process initialization, and should not be changed after that.
-extern uint64_t tcp_input_frontend_pkt_cnt[IP_THREAD_MAX_NUM];
+// extern uint64_t tcp_input_frontend_pkt_cnt[IP_THREAD_MAX_NUM];
 
 
 extern _Thread_local volatile int thread_tx_queue_id; // default 0, tcp thread set it to sepcific id;
@@ -128,6 +130,12 @@ extern _Thread_local volatile int ip_thread_identify_id;
 
 // struct ip_thread_ctx* get_ip_thread_ctx_default();
 
+
+static inline struct ip_thread_ctx* get_ip_thread_ctx_by_id(int id)
+{
+    if  (!(id >= 0 && id < g_ip_thread_num)) return NULL;
+    return &ip_thread_ctxs[id];
+}
 
 static inline struct ip_thread_ctx* get_ip_thread_ctx_default()
 {
