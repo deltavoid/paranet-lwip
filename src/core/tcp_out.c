@@ -78,6 +78,7 @@
 #include "lwip/sys.h"
 #endif
 #include "lwip/logging.h"
+#include "lwip/thread_framework.h"
 
 #include <string.h>
 #include <rte_malloc.h>
@@ -676,7 +677,9 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
       //   LWIP_DEBUGF(TCP_OUTPUT_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("tcp_write : could not allocate memory for pbuf copy size %"U16_F"\n", seglen));
       //   goto memerr;
       // }
+      tcp_thread_process_ts[13] = get_mono_tnesc();
       p = pbuf_alloc(PBUF_TRANSPORT, seglen + optlen, PBUF_RTE_MBUF_TX);
+      tcp_thread_process_ts[14] = get_mono_tnesc();
       if  (p == NULL)
       {
         LOG_INFO("tcp_write: 20\n");

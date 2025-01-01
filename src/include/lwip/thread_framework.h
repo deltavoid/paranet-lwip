@@ -64,10 +64,13 @@ struct tcp_thread_ctx {
     // struct epoll_handler_trait input_event_fd_handler;
 
     struct rte_ring* input_pkt_rings[IP_THREAD_MAX_NUM];
-};
+} __rte_cache_aligned;
 
 //  void tcp_thread_input_ring_notify(struct tcp_thread_ctx *ctx);
 int tcp_thread_input_ring_enqueue(int tcp_tid, int ip_tid, void* data);
+
+
+extern _Thread_local int64_t tcp_thread_process_ts[];
 
 
 // extern struct rte_mempool *pktmbuf_pool_tcp_tx;
@@ -82,7 +85,7 @@ struct ip_thread_ctx {
     int id;
     volatile int running;
 
-};
+} __rte_cache_aligned;
 
 // extern struct rte_mempool *pktmbuf_pool_rx;
 // struct rte_mempool* tcp_create_pktmbuf_pool_rx(int tcp_thread_num);
