@@ -1261,7 +1261,7 @@ ip4_output_if_opt_src(struct pbuf *p, const ip4_addr_t *src, const ip4_addr_t *d
   u32_t chk_sum = 0;
 #endif /* CHECKSUM_GEN_IP_INLINE */
 
-  LWIP_ASSERT_CORE_LOCKED();
+  // LWIP_ASSERT_CORE_LOCKED();
   LWIP_IP_CHECK_PBUF_REF_COUNT_FOR_TX(p);
 
   MIB2_STATS_INC(mib2.ipoutrequests);
@@ -1416,8 +1416,12 @@ ip4_output_if_opt_src(struct pbuf *p, const ip4_addr_t *src, const ip4_addr_t *d
   }
 #endif /* IP_FRAG */
 
+  tcp_thread_process_ts[18] = get_mono_tnesc();
   LWIP_DEBUGF(IP_DEBUG, ("ip4_output_if: call netif->output()\n"));
-  return netif->output(netif, p, dest);
+  err_t ret = netif->output(netif, p, dest);
+  tcp_thread_process_ts[23] = get_mono_tnesc();
+
+  return ret;
 }
 
 /**

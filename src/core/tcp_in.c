@@ -1308,7 +1308,7 @@ tcp_input_backend(struct pbuf *p)
         tcp_thread_process_ts[15] = get_mono_tnesc();
         /* Try to send something out. */
         tcp_output(pcb);
-        tcp_thread_process_ts[20] = get_mono_tnesc();
+        tcp_thread_process_ts[27] = get_mono_tnesc();
 
 
 #if TCP_INPUT_DEBUG
@@ -1346,7 +1346,7 @@ aborted:
     pbuf_free(p);
   }
 
-  tcp_thread_process_ts[21] = get_mono_tnesc();
+  tcp_thread_process_ts[28] = get_mono_tnesc();
   LWIP_ASSERT("tcp_input: tcp_pcbs_sane()", tcp_pcbs_sane());
   PERF_STOP("tcp_input");
   LOG_DEBUG("tcp_input_backend: 8, end\n");

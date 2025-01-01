@@ -1474,7 +1474,7 @@ tcp_output(struct tcp_pcb *pcb)
 
     tcp_thread_process_ts[16] = get_mono_tnesc();
     err = tcp_output_segment(seg, pcb, netif);
-    tcp_thread_process_ts[19] = get_mono_tnesc();
+    tcp_thread_process_ts[25] = get_mono_tnesc();
     if (err != ERR_OK) {
       /* segment could not be sent, for whatever reason */
       tcp_set_flags(pcb, TF_NAGLEMEMERR);
@@ -1534,7 +1534,7 @@ tcp_output(struct tcp_pcb *pcb)
 output_done:
   tcp_clear_flags(pcb, TF_NAGLEMEMERR);
 
-  tcp_thread_process_ts[20] = get_mono_tnesc();
+  tcp_thread_process_ts[26] = get_mono_tnesc();
   LOG_DEBUG("tcp_output: 3, end\n");
   return ERR_OK;
 }
@@ -1728,7 +1728,7 @@ tcp_output_segment(struct tcp_seg *seg, struct tcp_pcb *pcb, struct netif *netif
   err = ip_output_if(seg->p, &pcb->local_ip, &pcb->remote_ip, pcb->ttl,
                      pcb->tos, IP_PROTO_TCP, netif);
   NETIF_RESET_HINTS(netif);
-  tcp_thread_process_ts[18] = get_mono_tnesc();
+  tcp_thread_process_ts[24] = get_mono_tnesc();
 
 #if TCP_CHECKSUM_ON_COPY
   if (seg_chksum_was_swapped) {

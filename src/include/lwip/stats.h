@@ -462,7 +462,8 @@ void stats_init(void);
 #define ND6_STATS_DISPLAY()
 #endif
 
-#if MIB2_STATS
+
+#if /* MIB2_STATS */ false
 #define MIB2_STATS_INC(x) STATS_INC(x)
 #else
 #define MIB2_STATS_INC(x)
