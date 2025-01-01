@@ -57,6 +57,12 @@ struct tcp_thread_ctx {
     volatile bool ring_in_process;
     int input_event_fd;
     int epoll_fd;
+    uint64_t input_pkt_num;
+    uint64_t recv_pkt_num;
+    uint64_t recv_pkt_bytes;
+    uint64_t recv_pkt_rtt_us;
+    struct timespec recv_time;
+
     
     pthread_t pthread_ctx;
     // struct rte_ring* input_pkt_ring;

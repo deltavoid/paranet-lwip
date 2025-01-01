@@ -254,6 +254,7 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id
                 int ret = tcp_thread_poll_input_ring_once(ctx, i, &pkt_process_cnt, pkt_process_time);
                 last_poll_pkt_num += ret;
                 pkt_cnt += ret;
+                ctx->input_pkt_num += ret;
             }
         }
 
