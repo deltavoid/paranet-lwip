@@ -147,10 +147,11 @@ static inline long get_mono_tnesc()
 
 extern _Thread_local int64_t tcp_thread_process_ts[];
 
-static inline void tcp_thread_ts_check(int i)
-{
-    tcp_thread_process_ts[i] = get_mono_tnesc();
-}
 
+// static inline void tcp_thread_ts_check(int i)
+// {
+//     tcp_thread_process_ts[i] = get_mono_tnesc();
+// }
+#define tcp_thread_ts_check(i) do {} while(0)
 
 #endif // THREAD_FRAMEWORK_H

@@ -98,6 +98,9 @@ _Thread_local int64_t tcp_thread_process_ts[tcp_thread_process_ts_num + 1];
 // uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_num)
 uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id, int64_t* pkt_num_cnt_p, int64_t* pkt_process_time_p)
 {
+    LWIP_UNUSED_ARG(pkt_num_cnt_p);
+    LWIP_UNUSED_ARG(pkt_process_time_p);
+
     ctx->loop_state = 3;
     // uint64_t val = 0;
     // if (read(ctx->input_event_fd, &val, sizeof(val)) != sizeof(val))
@@ -150,16 +153,15 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id
             tcp_thread_ts_check(27); 
             ctx->loop_state = 6;
 
-            (*pkt_num_cnt_p)++;
-            for (int j = 1; j<= tcp_thread_process_ts_num; j++)
-            {
-                if  (tcp_thread_process_ts[j] > tcp_thread_process_ts[j - 1])
-                {
-                    int64_t duration = tcp_thread_process_ts[j] - tcp_thread_process_ts[j - 1];
-                    pkt_process_time_p[j] += duration;
-                }
-            }
-
+            // (*pkt_num_cnt_p)++;
+            // for (int j = 1; j<= tcp_thread_process_ts_num; j++)
+            // {
+            //     if  (tcp_thread_process_ts[j] > tcp_thread_process_ts[j - 1])
+            //     {
+            //         int64_t duration = tcp_thread_process_ts[j] - tcp_thread_process_ts[j - 1];
+            //         pkt_process_time_p[j] += duration;
+            //     }
+            // }
         }
         else
         {
@@ -319,14 +321,14 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id
                 //             ctx->id, i, rte_ring_count(ctx->input_pkt_rings[i]));
                 // }
 
-                for (int j = 1; j <= tcp_thread_process_ts_num; j++)
-                {
-                    double duration = (double)pkt_process_time[j] / pkt_process_cnt;
-                    LOG_INFO("tcp_thread_run: 3, ctx_id: %d, stage %d duration (ns): %lf\n",
-                            ctx->id, j, duration);
-                    pkt_process_time[j] = 0;
-                }
-                pkt_process_cnt = 0;
+                // for (int j = 1; j <= tcp_thread_process_ts_num; j++)
+                // {
+                //     double duration = (double)pkt_process_time[j] / pkt_process_cnt;
+                //     LOG_INFO("tcp_thread_run: 3, ctx_id: %d, stage %d duration (ns): %lf\n",
+                //             ctx->id, j, duration);
+                //     pkt_process_time[j] = 0;
+                // }
+                // pkt_process_cnt = 0;
 
                 prev_ts = now;
             }
