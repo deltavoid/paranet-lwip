@@ -86,7 +86,7 @@ int tcp_thread_input_ring_enqueue(int tcp_tid, int ip_tid, void* data)
     // input_enqueue_num++;
     struct ip_thread_ctx* ip_ctx = get_ip_thread_ctx_by_id(ip_tid);
     ip_ctx->enqueue_num++;
-    // event_fd_notify_num += tcp_thread_input_ring_notify(ctx);
+    ip_ctx->enqueue_event_fd_num += tcp_thread_input_ring_notify(ctx);
     return ret;
 }
 

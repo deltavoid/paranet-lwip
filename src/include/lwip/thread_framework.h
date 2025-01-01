@@ -90,6 +90,7 @@ struct ip_thread_ctx {
     volatile int running;
     uint64_t input_num;
     uint64_t enqueue_num;
+    uint64_t enqueue_event_fd_num;
 
 } __rte_cache_aligned;
 
