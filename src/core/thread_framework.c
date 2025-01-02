@@ -187,6 +187,8 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id
     uint64_t poll_cnt = 0;
     int64_t pkt_process_cnt = 0;
     int64_t pkt_process_time[tcp_thread_process_ts_num + 1];
+#define DEFAULT_EXTRA_POLL_TIME 1000
+    int extra_poll_time = 0;
 
 #define MAX_EPOLL_EVENT_NUM 5
     struct epoll_event events[MAX_EPOLL_EVENT_NUM];
@@ -216,7 +218,7 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id
         // usleep(1);
         // int ring_num = rte_ring_count(ctx->input_pkt_ring);
         // if (ring_num == 0)
-        if  (last_poll_pkt_num == 0)
+        if  (last_poll_pkt_num == 0 && (extra_poll_time <= 0 || --extra_poll_time <= 0))
         {
             ctx->ring_in_process = false;
 
@@ -248,7 +250,7 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id
             }
         }
 
-        if  (ctx->ring_in_process > 0)
+        if  (ctx->ring_in_process)
         {
             last_poll_pkt_num = 0;
             for (int i = 0; i < g_ip_thread_num; i++)
@@ -257,6 +259,14 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id
                 last_poll_pkt_num += ret;
                 pkt_cnt += ret;
                 ctx->input_pkt_num += ret;
+            }
+
+            if  (last_poll_pkt_num == 0)
+            {
+                if  (extra_poll_time <= 0)
+                {
+                    extra_poll_time  = DEFAULT_EXTRA_POLL_TIME;
+                }
             }
         }
 
