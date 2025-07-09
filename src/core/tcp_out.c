@@ -1246,7 +1246,9 @@ tcp_output(struct tcp_pcb *pcb)
   s16_t i = 0;
 #endif /* TCP_CWND_DEBUG */
 
-  LOG_DEBUG("tcp_output: 1, enter\n");
+  LOG_DEBUG("tcp_output: 1, test, enter\n");
+
+
 
   LWIP_ASSERT_CORE_LOCKED();
 
