@@ -128,6 +128,8 @@ tcp_input(struct pbuf *p, struct netif *inp)
   err_t err;
 
   LOG_DEBUG("tcp_input: 1\n");
+  /* 分离在确认包完整之后， 开始查表之前。
+  */
 
 
   LWIP_UNUSED_ARG(inp);
