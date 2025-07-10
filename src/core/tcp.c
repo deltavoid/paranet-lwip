@@ -111,6 +111,7 @@
 #include "lwip/ip6.h"
 #include "lwip/ip6_addr.h"
 #include "lwip/nd6.h"
+#include "lwip/logging.h"
 
 #include <string.h>
 
@@ -851,6 +852,8 @@ tcp_listen_with_backlog_and_err(struct tcp_pcb *pcb, u8_t backlog, err_t *err)
   struct tcp_pcb_listen *lpcb = NULL;
   err_t res;
 
+  LOG_DEBUG("tcp_listen_with_backlog_and_err: 1, enter\n");
+
   LWIP_UNUSED_ARG(backlog);
 
   LWIP_ASSERT_CORE_LOCKED();
@@ -918,6 +921,8 @@ done:
   if (err != NULL) {
     *err = res;
   }
+
+  LOG_DEBUG("tcp_listen_with_backlog_and_err: 2, end\n");
   return (struct tcp_pcb *)lpcb;
 }
 

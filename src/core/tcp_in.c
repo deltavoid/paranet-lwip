@@ -658,6 +658,8 @@ tcp_listen_input(struct tcp_pcb_listen *pcb)
   u32_t iss;
   err_t rc;
 
+  LOG_DEBUG("tcp_listen_input: 1, inter\n");
+
   if (flags & TCP_RST) {
     /* An incoming RST should be ignored. Return. */
     return;
@@ -748,6 +750,8 @@ tcp_listen_input(struct tcp_pcb_listen *pcb)
     }
     tcp_output(npcb);
   }
+
+  LOG_DEBUG("tcp_listen_input: 2, end\n");
   return;
 }
 
