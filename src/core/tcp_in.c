@@ -801,6 +801,8 @@ tcp_process(struct tcp_pcb *pcb)
 
   LWIP_ASSERT("tcp_process: invalid pcb", pcb != NULL);
 
+  LOG_DEBUG("tcp_process: 1, enter\n");
+
   /* Process incoming RST segments. */
   if (flags & TCP_RST) {
     /* First, determine if the reset is acceptable. */
@@ -1045,6 +1047,8 @@ tcp_process(struct tcp_pcb *pcb)
     default:
       break;
   }
+
+  LOG_DEBUG("tcp_process: 2, end\n");
   return ERR_OK;
 }
 
@@ -1153,6 +1157,8 @@ tcp_receive(struct tcp_pcb *pcb)
 
   LWIP_ASSERT("tcp_receive: invalid pcb", pcb != NULL);
   LWIP_ASSERT("tcp_receive: wrong state", pcb->state >= ESTABLISHED);
+
+  LOG_DEBUG("tcp_receive: 1, enter\n");
 
   if (flags & TCP_ACK) {
     right_wnd_edge = pcb->snd_wnd + pcb->snd_wl2;
@@ -1889,6 +1895,8 @@ tcp_receive(struct tcp_pcb *pcb)
       tcp_ack_now(pcb);
     }
   }
+
+  LOG_DEBUG("tcp_receive: 2, end\n");
 }
 
 static u8_t
