@@ -1,3 +1,5 @@
 
 *.o
 doc/doxygen/output
+
+.vscode
