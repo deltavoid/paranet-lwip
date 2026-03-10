@@ -238,6 +238,14 @@ tcp_input(struct pbuf *p, struct netif *inp)
   ackno = tcphdr->ackno = lwip_ntohl(tcphdr->ackno);
   tcphdr->wnd = lwip_ntohs(tcphdr->wnd);
 
+
+
+  /* may be split here*/
+
+  /* per thread one queue,  put pkt directly to thread queue by the four tuple hash*/
+
+
+
   flags = TCPH_FLAGS(tcphdr);
   tcplen = p->tot_len;
   if (flags & (TCP_FIN | TCP_SYN)) {
