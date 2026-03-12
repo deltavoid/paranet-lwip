@@ -7,7 +7,16 @@
 
 int tcp_thread_num, ip_thread_num; // global variable, init at process initialization, and should not be changed after that.
 
+struct tcp_thread_cb {
+    int id;
 
+
+};
+
+struct ip_thread_cb {
+    int id;
+
+};
 
 
 void thread_framework_init()
