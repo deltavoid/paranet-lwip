@@ -5,11 +5,13 @@
 #include "lwip/logging.h"
 
 
-int tcp_thread_num, ip_thread_num; // global variable, init at process initialization, and should not be changed after that.
+int g_tcp_thread_num, g_ip_thread_num; // global variable, init at process initialization, and should not be changed after that.
 
 struct tcp_thread_cb {
     int id;
 
+
+    // todo, dpdk ring for tcp pkt in process
 
 };
 
@@ -18,8 +20,10 @@ struct ip_thread_cb {
 
 };
 
+// todo, thread eventloop, base on epoll and eventfd.
 
-void thread_framework_init()
+
+void thread_framework_init(int ip_thread_num, int tcp_thread_num)
 {
     LOG_DEBUG("thread_framework_init: 1\n");
 
