@@ -241,32 +241,37 @@ tcp_free_listen(struct tcp_pcb *pcb)
   memp_free(MEMP_TCP_PCB_LISTEN, pcb);
 }
 
-
+void tcp_fasttmr1(struct tcp_pcb* tcp_active_pcbs);
 void tcp_slowtmr_process_active(struct tcp_pcb *tcp_active_pcbs);
 
 /**
  * Called periodically to dispatch TCP timers.
  */
-void
-tcp_tmr(void)
+void tcp_tmr(void)
 {
   LOG_DEBUG("tcp_tmr: 1, begin\n");
+  struct tcp_thread_ctx *ctx = get_tcp_thread_ctx_default();
+
   /* Call tcp_fasttmr() every 250 ms */
   tcp_fasttmr();
+  if (ctx->id == 0)
+  {
+    LOG_INFO("tcp_fasttmr process tcp_before_estab_pcbs\n");
+    tcp_fasttmr1(tcp_before_estab_pcbs);
+  }
 
-  if (++tcp_timer & 1) {
+  if (++tcp_timer & 1)
+  {
     /* Call tcp_slowtmr() every 500 ms, i.e., every other timer
        tcp_tmr() is called. */
-       LOG_DEBUG("tcp_tmr: 2\n");
+    LOG_DEBUG("tcp_tmr: 2\n");
     tcp_slowtmr();
 
-    struct tcp_thread_ctx* ctx = get_tcp_thread_ctx_default();
-    if  (ctx->id == 0)
+    if (ctx->id == 0)
     {
       LOG_INFO("timer process tcp_before_estab_pcbs\n");
       tcp_slowtmr_process_active(tcp_before_estab_pcbs);
     }
-
   }
 
   LOG_DEBUG("tcp_tmr: 3, end\n");
@@ -1130,6 +1135,7 @@ tcp_connect(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port,
   ip_addr_set(&pcb->remote_ip, ipaddr);
   pcb->remote_port = port;
 
+  LOG_DEBUG("tcp_connect: 1.1\n");
   if (pcb->netif_idx != NETIF_NO_INDEX) {
     netif = netif_get_by_index(pcb->netif_idx);
   } else {
@@ -1138,6 +1144,7 @@ tcp_connect(struct tcp_pcb *pcb, const ip_addr_t *ipaddr, u16_t port,
   }
   if (netif == NULL) {
     /* Don't even try to send a SYN packet if we have no route since that will fail. */
+     LOG_DEBUG("tcp_connect: 1.2\n");
     return ERR_RTE;
   }
 
@@ -1232,6 +1239,7 @@ LOG_DEBUG("tcp_connect: 6\n");
     // TCP_REG_ACTIVE(pcb);
     TCP_REG(&tcp_before_estab_pcbs, pcb);
     MIB2_STATS_INC(mib2.tcpactiveopens);
+    tcp_active_pcbs_changed = 1;
 
     LOG_DEBUG("tcp_connect: 8\n");
     tcp_output(pcb);
@@ -1782,6 +1790,52 @@ tcp_slowtmr(void)
  */
 void
 tcp_fasttmr(void)
+{
+  struct tcp_pcb *pcb;
+
+  ++tcp_timer_ctr;
+
+tcp_fasttmr_start:
+  pcb = tcp_active_pcbs;
+
+  while (pcb != NULL) {
+    if (pcb->last_timer != tcp_timer_ctr) {
+      struct tcp_pcb *next;
+      pcb->last_timer = tcp_timer_ctr;
+      /* send delayed ACKs */
+      if (pcb->flags & TF_ACK_DELAY) {
+        LWIP_DEBUGF(TCP_DEBUG, ("tcp_fasttmr: delayed ACK\n"));
+        tcp_ack_now(pcb);
+        tcp_output(pcb);
+        tcp_clear_flags(pcb, TF_ACK_DELAY | TF_ACK_NOW);
+      }
+      /* send pending FIN */
+      if (pcb->flags & TF_CLOSEPEND) {
+        LWIP_DEBUGF(TCP_DEBUG, ("tcp_fasttmr: pending FIN\n"));
+        tcp_clear_flags(pcb, TF_CLOSEPEND);
+        tcp_close_shutdown_fin(pcb);
+      }
+
+      next = pcb->next;
+
+      /* If there is data which was previously "refused" by upper layer */
+      if (pcb->refused_data != NULL) {
+        tcp_active_pcbs_changed = 0;
+        tcp_process_refused_data(pcb);
+        if (tcp_active_pcbs_changed) {
+          /* application callback has changed the pcb list: restart the loop */
+          goto tcp_fasttmr_start;
+        }
+      }
+      pcb = next;
+    } else {
+      pcb = pcb->next;
+    }
+  }
+}
+
+void
+tcp_fasttmr1(struct tcp_pcb* tcp_active_pcbs)
 {
   struct tcp_pcb *pcb;
 

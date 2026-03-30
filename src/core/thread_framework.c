@@ -111,7 +111,7 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx)
     {
         user_app_init();
 
-        tx_flush();
+        // tx_flush();
     }
 
     while (ctx->running)
@@ -177,7 +177,7 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx)
         // }
 
         ctx->loop_state = 7;
-        //todo, need to use epoll, and need to handle global lists
+        tcp_timer_needed();
         sys_check_timeouts();
 
         ctx->loop_state = 8;

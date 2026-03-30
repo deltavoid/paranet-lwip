@@ -61,6 +61,7 @@
 #include "lwip/sys.h"
 #include "lwip/pbuf.h"
 #include "lwip/logging.h"
+#include "lwip/thread_framework.h"
 
 #if LWIP_DEBUG_TIMERNAMES
 #define HANDLER(x) x, #x
@@ -154,7 +155,10 @@ tcpip_tcp_timer(void *arg)
   
   /* timer still needed? */
   LOG_DEBUG("tcpip_tcp_timer: 2\n");
-  if (tcp_active_pcbs || tcp_tw_pcbs) {
+  // if (tcp_active_pcbs || tcp_tw_pcbs) 
+  if (tcp_active_pcbs || tcp_tw_pcbs 
+        || (get_tcp_thread_ctx_default()->id == 0 && tcp_before_estab_pcbs)) 
+  {
     /* restart timer */
     LOG_DEBUG("tcpip_tcp_timer: 3\n");
     sys_timeout(TCP_TMR_INTERVAL, tcpip_tcp_timer, NULL);
@@ -178,7 +182,7 @@ tcp_timer_needed(void)
   LWIP_ASSERT_CORE_LOCKED();
 
   /* timer is off but needed again? */
-  if (!tcpip_tcp_timer_active && (tcp_active_pcbs || tcp_tw_pcbs)) {
+  if (!tcpip_tcp_timer_active && (tcp_active_pcbs || tcp_tw_pcbs || tcp_active_pcbs_changed)) {
     /* enable and start timer */
     tcpip_tcp_timer_active = 1;
     sys_timeout(TCP_TMR_INTERVAL, tcpip_tcp_timer, NULL);
