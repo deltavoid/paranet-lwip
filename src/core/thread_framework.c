@@ -25,6 +25,7 @@
 
 #include <rte_mbuf.h>
 #include <rte_errno.h>
+#include <sys/epoll.h>
 
 // tcp_thread class ----------------------------
 
@@ -45,12 +46,60 @@ _Thread_local volatile int thread_tx_queue_id = 0; // default 0, tcp thread set 
 
 void user_app_init();
 
+uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx)
+{
+    ctx->loop_state = 3;
+    uint64_t val = 0;
+    if (read(ctx->input_event_fd, &val, sizeof(val)) != sizeof(val))
+    {
+        perror("read eventfd error");
+        return 0;
+    }
+    LOG_DEBUG("tcp_thread_run: 3, ctx_id: %d, get val: %ld\n", ctx->id, val);
+
+    for (uint64_t i = 0; i < val; i++)
+    {
+        void *obj_ptr;
+        ctx->loop_state = 4;
+        if (rte_ring_dequeue(ctx->input_pkt_ring, &obj_ptr) == 0)
+        {
+            // get object
+            // LOG_DEBUG("tcp_thread_run: 4, data: %d\n", *(int*)obj_ptr);
+
+            struct tcp_thread_input_pkt_wrapper *wrapper =
+                (struct tcp_thread_input_pkt_wrapper *)obj_ptr;
+            struct pbuf *p = wrapper->p;
+            // struct tcp_hdr *tcphdr = (struct tcp_hdr *)p->payload;
+            // LOG_DEBUG("tcp_thread_run: tcphdr: src: %d, dest: %d\n",
+            //     lwip_ntohs(tcphdr->src), lwip_ntohs(tcphdr->dest));
+
+            ip_data = wrapper->ip_data;
+            rte_free(wrapper);
+
+            ctx->loop_state = 5;
+            tcp_input_backend(p);
+            // pbuf_free(p);
+            ctx->loop_state = 6;
+        }
+        else
+        {
+            LOG_DEBUG("tcp_thread_run: 5, no element\n");
+            break;
+        }
+    }
+
+    return val;
+}
+
 /* void*  */ int tcp_thread_run(void* arg)
 {
     struct tcp_thread_ctx* ctx = (struct tcp_thread_ctx*)arg;
     // int cnt = 0;
     uint64_t pkt_cnt = 0;
     uint64_t prev_ts = 0;
+
+#define MAX_EPOLL_EVENT_NUM 5
+    struct epoll_event events[MAX_EPOLL_EVENT_NUM];
 
     thread_tx_queue_id = 1 + ctx->id;    
 
@@ -67,49 +116,65 @@ void user_app_init();
 
     while (ctx->running)
     {
+        ctx->loop_state = 2;        
         LOG_DEBUG("tcp_thread_run: 2, id: %d\n", ctx->id);
-        ctx->loop_state = 2;
 
-        uint64_t val = 0;
-        if  (read(ctx->input_event_fd, &val, sizeof(val)) != sizeof(val))
-        {   perror("read eventfd error");
-            break;
-        }
-        LOG_DEBUG("tcp_thread_run: 3, ctx_id: %d, get val: %ld\n", ctx->id, val);
-        pkt_cnt += val;
-
-        ctx->loop_state = 3;
-        for (uint64_t i = 0; i < val; i++)
+        int num = epoll_wait(ctx->epoll_fd, events, MAX_EPOLL_EVENT_NUM, 250);
+        LOG_DEBUG("tcp_thread_run: 2, id: %d, epoll_wait return %d\n", ctx->id, num);
+        if  ((num < 0)) 
+            perror("epoll_wait error");
+        
+        for (int i = 0; i < num; i++)
         {
-            void* obj_ptr;
-            ctx->loop_state = 4;
-            if (rte_ring_dequeue(ctx->input_pkt_ring, &obj_ptr) == 0)
+            int fd = events[i].data.fd;
+            if  (fd == ctx->input_event_fd)
             {
-                // get object
-                // LOG_DEBUG("tcp_thread_run: 4, data: %d\n", *(int*)obj_ptr);
-                
-                struct tcp_thread_input_pkt_wrapper*  wrapper  = 
-                    (struct tcp_thread_input_pkt_wrapper*)obj_ptr;
-                struct pbuf *p = wrapper->p;
-                // struct tcp_hdr *tcphdr = (struct tcp_hdr *)p->payload;
-                // LOG_DEBUG("tcp_thread_run: tcphdr: src: %d, dest: %d\n", 
-                //     lwip_ntohs(tcphdr->src), lwip_ntohs(tcphdr->dest));
-                
-                ip_data = wrapper->ip_data;
-                rte_free(wrapper);
-
-                ctx->loop_state = 5;
-                tcp_input_backend(p);
-                // pbuf_free(p);
-                ctx->loop_state = 6;
-
+                pkt_cnt += tcp_thread_poll_input_ring_once(ctx);
             }
             else
-            {
-                LOG_DEBUG("tcp_thread_run: 5, no element\n");   
-                break;
+            {   LOG_INFO("tcp_thread_run, unknown event\n");
             }
         }
+
+
+        // uint64_t val = 0;
+        // if  (read(ctx->input_event_fd, &val, sizeof(val)) != sizeof(val))
+        // {   perror("read eventfd error");
+        //     break;
+        // }
+        // LOG_DEBUG("tcp_thread_run: 3, ctx_id: %d, get val: %ld\n", ctx->id, val);
+        
+        // for (uint64_t i = 0; i < val; i++)
+        // {
+        //     void* obj_ptr;
+        //     ctx->loop_state = 4;
+        //     if (rte_ring_dequeue(ctx->input_pkt_ring, &obj_ptr) == 0)
+        //     {
+        //         // get object
+        //         // LOG_DEBUG("tcp_thread_run: 4, data: %d\n", *(int*)obj_ptr);
+                
+        //         struct tcp_thread_input_pkt_wrapper*  wrapper  = 
+        //             (struct tcp_thread_input_pkt_wrapper*)obj_ptr;
+        //         struct pbuf *p = wrapper->p;
+        //         // struct tcp_hdr *tcphdr = (struct tcp_hdr *)p->payload;
+        //         // LOG_DEBUG("tcp_thread_run: tcphdr: src: %d, dest: %d\n", 
+        //         //     lwip_ntohs(tcphdr->src), lwip_ntohs(tcphdr->dest));
+                
+        //         ip_data = wrapper->ip_data;
+        //         rte_free(wrapper);
+
+        //         ctx->loop_state = 5;
+        //         tcp_input_backend(p);
+        //         // pbuf_free(p);
+        //         ctx->loop_state = 6;
+
+        //     }
+        //     else
+        //     {
+        //         LOG_DEBUG("tcp_thread_run: 5, no element\n");   
+        //         break;
+        //     }
+        // }
 
         ctx->loop_state = 7;
         //todo, need to use epoll, and need to handle global lists
@@ -174,12 +239,12 @@ int tcp_thread_init(struct tcp_thread_ctx* ctx, int id, int core_id)
     LOG_DEBUG("tcp_thread_init: 1, begin, id: %d\n", id);
 
 
-    ret = eventfd(0, 0);
-    if  (ret < 0)
-    {   perror("eventfd create error");
-        return ret;
-    }
-    ctx->input_event_fd = ret;
+    // epoll fd
+    ctx->epoll_fd = epoll_create1(0);
+    if  (ctx->epoll_fd < 0)
+    {   perror("epoll fd created error");
+    } 
+
 
     /* 2. 创建多生产者单消费者无锁队列 */
     snprintf(ring_name, 32, "tcp_input_ring%d", id);
@@ -189,6 +254,24 @@ int tcp_thread_init(struct tcp_thread_ctx* ctx, int id, int core_id)
     {   LOG_INFO("create input ring failed\n");
         return -1;
     }
+
+    ret = eventfd(0, 0);
+    if  (ret < 0)
+    {   perror("eventfd create error");
+        return ret;
+    }
+    ctx->input_event_fd = ret;
+
+
+    // attach eventfd to epoll fd
+    struct epoll_event event_fd_event;
+    event_fd_event.events = EPOLLIN;
+    event_fd_event.data.fd = ctx->input_event_fd;
+    // listen_event.data.ptr = NULL;
+    ret = epoll_ctl(ctx->epoll_fd, EPOLL_CTL_ADD, ctx->input_event_fd, &event_fd_event);
+    if  (ret < 0)  
+        perror("epoll_ctl event_fd error");
+
 
     ctx->pktmbuf_pool_tcp_tx = tcp_thread_create_pktmbuf_pool_tcp_tx(ctx->id);
     if  (ctx->pktmbuf_pool_tcp_tx == NULL)

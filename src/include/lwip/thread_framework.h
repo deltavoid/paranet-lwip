@@ -11,6 +11,31 @@
 
 #include "lwip/ip.h"
 
+// for epoll -----------------
+
+typedef int (*epoll_handler_t)(void* data, uint32_t events);
+typedef void (*destructor_t)(void* data);
+
+struct epoll_handler_ops {
+    epoll_handler_t handler;
+    destructor_t destructor;
+};
+
+struct epoll_handler_trait {
+    struct epoll_handler_ops * ops;
+    void* data;
+};
+
+static inline int epoll_handle(struct epoll_handler_trait* trait, uint32_t events)
+{
+    return trait->ops->handler(trait->data, events);
+}
+
+static inline void epoll_handler_destruct(struct epoll_handler_trait* trait)
+{
+    trait->ops->destructor(trait->data);
+}
+
 // tcp_thread_ctx -----------------------------------
 
 struct tcp_thread_input_pkt_wrapper {
@@ -31,6 +56,9 @@ struct tcp_thread_ctx {
     volatile int running;
     int input_event_fd;
     int loop_state;
+    int epoll_fd;
+
+    struct epoll_handler_trait input_event_fd_handler;
 
 };
 
