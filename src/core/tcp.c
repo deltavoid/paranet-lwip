@@ -113,6 +113,7 @@
 #include "lwip/nd6.h"
 #include "lwip/logging.h"
 #include "lwip/tcp_ports.h"
+#include "lwip/thread_framework.h"
 
 #include <string.h>
 #include <rte_malloc.h>
@@ -240,6 +241,9 @@ tcp_free_listen(struct tcp_pcb *pcb)
   memp_free(MEMP_TCP_PCB_LISTEN, pcb);
 }
 
+
+void tcp_slowtmr_process_active(struct tcp_pcb *tcp_active_pcbs);
+
 /**
  * Called periodically to dispatch TCP timers.
  */
@@ -255,6 +259,14 @@ tcp_tmr(void)
        tcp_tmr() is called. */
        LOG_DEBUG("tcp_tmr: 2\n");
     tcp_slowtmr();
+
+    struct tcp_thread_ctx* ctx = get_tcp_thread_ctx_default();
+    if  (ctx->id == 0)
+    {
+      LOG_INFO("timer process tcp_before_estab_pcbs\n");
+      tcp_slowtmr_process_active(tcp_before_estab_pcbs);
+    }
+
   }
 
   LOG_DEBUG("tcp_tmr: 3, end\n");
