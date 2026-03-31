@@ -102,7 +102,7 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id
     //     perror("read eventfd error");
     //     return 0;
     // }
-    LOG_DEBUG("tcp_thread_run: 3, ctx_id: %d, get val: %ld\n", ctx->id, val);
+    // LOG_DEBUG("tcp_thread_run: 3, ctx_id: %d\n", ctx->id);
     struct rte_ring* ring = ctx->input_pkt_rings[ring_id];
     int ring_num = rte_ring_count(ring);
 
@@ -175,7 +175,7 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id
     while (ctx->running)
     {
         ctx->loop_state = 2;        
-        LOG_DEBUG("tcp_thread_run: 2, id: %d\n", ctx->id);
+        // LOG_DEBUG("tcp_thread_run: 2, id: %d\n", ctx->id);
 
 
         // dead poll

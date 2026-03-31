@@ -69,6 +69,8 @@ struct netif *ip4_route_src(const ip4_addr_t *src, const ip4_addr_t *dest);
 #define ip4_route_src(src, dest) ip4_route(dest)
 #endif /* LWIP_IPV4_SRC_ROUTING */
 err_t ip4_input(struct pbuf *p, struct netif *inp);
+err_t ip4_input_scaffolding(struct pbuf *p, struct netif *inp);
+
 err_t ip4_output(struct pbuf *p, const ip4_addr_t *src, const ip4_addr_t *dest,
        u8_t ttl, u8_t tos, u8_t proto);
 err_t ip4_output_if(struct pbuf *p, const ip4_addr_t *src, const ip4_addr_t *dest,

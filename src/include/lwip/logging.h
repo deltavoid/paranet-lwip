@@ -17,8 +17,8 @@
 
 #define OUTPUT_FILE stderr
 
-// #define CURRENT_LOG_LEVEL LOG_LEVEL_DEBUG
-#define CURRENT_LOG_LEVEL LOG_LEVEL_INFO
+#define CURRENT_LOG_LEVEL LOG_LEVEL_DEBUG
+// #define CURRENT_LOG_LEVEL LOG_LEVEL_INFO
 
 
 // #define ESC_START     "\033["
@@ -37,14 +37,14 @@
     // #define LOG_DEBUG(format, args...) (fprintf(OUTPUT_FILE,  ESC_START COLOR_INFO "[INFO]-[%s]-[%d]-[%s]:" format ESC_END, __FILE__, __LINE__, __FUNCTION__ , ##args))
     // #define LOG_DEBUG(format, args...) (printf( ESC_START COLOR_INFO "[INFO]-[%s]-[%s]-[%d]:" format ESC_END, __FILE__, __FUNCTION__ , __LINE__, ##args))
     // #define LOG_DEBUG(format, args...) (fprintf(OUTPUT_FILE, "DEBUG %s %d %s: " format , __FILE__, __LINE__, __FUNCTION__ , ##args))
-    #define LOG_DEBUG(format, args...) (fprintf(OUTPUT_FILE, "DEBUG 00:00:00.000000 %ld %-24s %4d] " format , syscall(__NR_gettid) , __FILE__, __LINE__, ##args))
+    #define LOG_DEBUG(format, args...) (fprintf(OUTPUT_FILE, "DEBUG  %ld %-24s %4d] " format , syscall(__NR_gettid) , __FILE__, __LINE__, ##args))
 #else
     #define LOG_DEBUG(format, args...) do{}while(0)
 #endif 
     
 
 #if (LOG_LEVEL_INFO >= CURRENT_LOG_LEVEL)
-    #define LOG_INFO(format, args...) (fprintf(OUTPUT_FILE, "INFO  %s %d %s] " format , __FILE__, __LINE__, __FUNCTION__ , ##args))
+    #define LOG_INFO(format, args...) (fprintf(OUTPUT_FILE, "INFO  %ld %s %d %s] " format , syscall(__NR_gettid) , __FILE__, __LINE__, __FUNCTION__ , ##args))
 #else
     #define LOG_INFO(format, args...) do{}while(0)
 #endif
