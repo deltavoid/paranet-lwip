@@ -295,7 +295,7 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id
 
         ctx->loop_state = 10;
 
-        usleep(1);        
+        // usleep(1);        
     }
 
     // return NULL;
