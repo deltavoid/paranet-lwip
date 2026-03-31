@@ -47,11 +47,12 @@ _Thread_local volatile int thread_tx_queue_id = 0; // default 0, tcp thread set 
 void user_app_init();
 
 
-void tcp_thread_input_ring_notify(struct tcp_thread_ctx *ctx, uint64_t val)
+void tcp_thread_input_ring_notify(struct tcp_thread_ctx *ctx)
 {
     if  (ctx->ring_in_process)
         return ;
     
+    uint64_t val = 1;
     if (write(ctx->input_event_fd, &val, sizeof(val)) != sizeof(val))
     {
         perror("write eventfd error");
@@ -69,9 +70,25 @@ int tcp_thread_input_ring_ack(struct tcp_thread_ctx *ctx, uint64_t* val_p)
     return 0;
 }
 
+int tcp_thread_input_ring_enqueue(int tcp_tid, int ip_tid, void* data)
+{
+    assert(tcp_tid >= 0 && tcp_tid < g_tcp_thread_num);
+    assert(ip_tid >= 0 && ip_tid < g_ip_thread_num);
+    struct tcp_thread_ctx * ctx = get_tcp_thread_ctx_by_id(tcp_tid);
+
+    struct rte_ring* ring = ctx->input_pkt_rings[ip_tid];
+    int ret = rte_ring_enqueue(ring, data);
+
+    tcp_thread_input_ring_notify(ctx);
+    return ret;
+}
+
+
+
 #define TCP_THREAD_RUN_MAX_PKT_ONCE 128
 
-uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_num)
+// uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_num)
+uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_id)
 {
     ctx->loop_state = 3;
     // uint64_t val = 0;
@@ -81,6 +98,8 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_nu
     //     return 0;
     // }
     LOG_DEBUG("tcp_thread_run: 3, ctx_id: %d, get val: %ld\n", ctx->id, val);
+    struct rte_ring* ring = ctx->input_pkt_rings[ring_id];
+    int ring_num = rte_ring_count(ring);
 
     int process_num = ring_num > TCP_THREAD_RUN_MAX_PKT_ONCE ? 
             TCP_THREAD_RUN_MAX_PKT_ONCE : ring_num;
@@ -89,7 +108,7 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_nu
     {
         void *obj_ptr;
         ctx->loop_state = 4;
-        if (rte_ring_dequeue(ctx->input_pkt_ring, &obj_ptr) == 0)
+        if (rte_ring_dequeue(ring, &obj_ptr) == 0)
         {
             // get object
             // LOG_DEBUG("tcp_thread_run: 4, data: %d\n", *(int*)obj_ptr);
@@ -127,6 +146,7 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_nu
     // int cnt = 0;
     uint64_t pkt_cnt = 0;
     uint64_t prev_ts = 0;
+    int last_poll_pkt_num = 0;
 
 #define MAX_EPOLL_EVENT_NUM 5
     struct epoll_event events[MAX_EPOLL_EVENT_NUM];
@@ -151,8 +171,9 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_nu
         ctx->loop_state = 2;        
         LOG_DEBUG("tcp_thread_run: 2, id: %d\n", ctx->id);
 
-        int ring_num = rte_ring_count(ctx->input_pkt_ring);
-        if (ring_num == 0)
+        // int ring_num = rte_ring_count(ctx->input_pkt_ring);
+        // if (ring_num == 0)
+        if  (last_poll_pkt_num == 0)
         {
             ctx->ring_in_process = false;
 
@@ -170,9 +191,11 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_nu
                     tcp_thread_input_ring_ack(ctx, &val);
 
                     // pkt_cnt += tcp_thread_poll_input_ring_once(ctx);
-                    ring_num = rte_ring_count(ctx->input_pkt_ring);
-                    if (ring_num > 0)
-                        ctx->ring_in_process = true;
+                    // ring_num = rte_ring_count(ctx->input_pkt_ring);
+                    // if (ring_num > 0)
+                    //     ctx->ring_in_process = true;
+
+                    ctx->ring_in_process = true;
                 }
                 else
                 {
@@ -181,9 +204,15 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_nu
             }
         }
 
-        if  (ring_num > 0)
+        if  (ctx->ring_in_process > 0)
         {
-            pkt_cnt += tcp_thread_poll_input_ring_once(ctx, ring_num);
+            last_poll_pkt_num = 0;
+            for (int i = 0; i < g_ip_thread_num; i++)
+            {
+                int ret = tcp_thread_poll_input_ring_once(ctx, i);
+                last_poll_pkt_num += ret;
+                pkt_cnt += ret;
+            }
         }
 
 
@@ -238,8 +267,11 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_nu
         if (now - prev_ts > 1000000000UL)
         {
 
-            LOG_INFO("tcp_thread_run: 3: ctx_id: %d, pkt_cnt: %lu, input_ring num: %d\n", 
-                    ctx->id, pkt_cnt, rte_ring_count(ctx->input_pkt_ring));
+            // LOG_INFO("tcp_thread_run: 3: ctx_id: %d, pkt_cnt: %lu, input_ring num: %d\n", 
+            //         ctx->id, pkt_cnt, );
+            LOG_INFO("tcp_thread_run: 3: ctx_id: %d, pkt_cnt: %lu\n",
+                     ctx->id, pkt_cnt);
+
             prev_ts = now;
         }
 
@@ -291,12 +323,25 @@ int tcp_thread_init(struct tcp_thread_ctx* ctx, int id, int core_id)
 
 
     /* 2. 创建多生产者单消费者无锁队列 */
-    snprintf(ring_name, 32, "tcp_input_ring%d", id);
-    ctx->input_pkt_ring = rte_ring_create(ring_name, TCP_THREAD_INPUT_RING_SIZE,
-            rte_socket_id(), RING_F_SC_DEQ);    /* 单消费者出队标志 */
-    if  (ctx->input_pkt_ring == NULL)
-    {   LOG_INFO("create input ring failed\n");
-        return -1;
+    // snprintf(ring_name, 32, "tcp_input_ring%d", id);
+    // ctx->input_pkt_ring = rte_ring_create(ring_name, TCP_THREAD_INPUT_RING_SIZE,
+    //         rte_socket_id(), RING_F_SC_DEQ);    /* 单消费者出队标志 */
+    // if  (ctx->input_pkt_ring == NULL)
+    // {   LOG_INFO("create input ring failed\n");
+    //     return -1;
+    // }
+
+    for (int i = 0; i < g_ip_thread_num; i++)
+    {
+        snprintf(ring_name, 32, "tcp_input_ring%d-i%d", id, i);
+        struct rte_ring *ring = rte_ring_create(ring_name, TCP_THREAD_INPUT_RING_SIZE,
+                                                rte_socket_id(), RING_F_SC_DEQ | RING_F_SP_ENQ); /* 单消费者出队标志 */
+        if (ring == NULL)
+        {
+            LOG_INFO("create input ring failed\n");
+            return -1;
+        }
+        ctx->input_pkt_rings[i] = ring;
     }
 
     ret = eventfd(0, 0);
@@ -339,7 +384,8 @@ int tcp_thread_init(struct tcp_thread_ctx* ctx, int id, int core_id)
 
 void tcp_thread_destroy(struct tcp_thread_ctx* ctx)
 {
-    rte_ring_free(ctx->input_pkt_ring);
+    LWIP_UNUSED_ARG(ctx);
+    // rte_ring_free(ctx->input_pkt_ring);
 }
 
 

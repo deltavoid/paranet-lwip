@@ -722,8 +722,8 @@ tcp_input_frontend(struct pbuf *p, struct netif *inp)
   // calculate hash code and put pkt into tcp input_pkt_ring
   // int hash_code = (tcphdr->src ^ tcphdr->dest) % g_tcp_thread_num;
   int hash_code = tcp_packet_hash(tcphdr->src,  tcphdr->dest) % g_tcp_thread_num;
-  struct tcp_thread_ctx* ctx = get_tcp_thread_ctx_by_id(hash_code);
-  LOG_DEBUG("tcp_input_frontend: 2, ctx id: %d\n", ctx->id);
+  // struct tcp_thread_ctx* ctx = get_tcp_thread_ctx_by_id(hash_code);
+  // LOG_DEBUG("tcp_input_frontend: 2, ctx id: %d\n", ctx->id);
 
   struct tcp_thread_input_pkt_wrapper*  wrapper  = 
       rte_malloc("obj", sizeof(struct tcp_thread_input_pkt_wrapper), 0);
@@ -736,10 +736,18 @@ tcp_input_frontend(struct pbuf *p, struct netif *inp)
   wrapper->ip_data = ip_data;
   wrapper->p = p;
 
-  LOG_DEBUG("tcp_input_frontend: 2.2\n");
-  // put pkt into ctx's ring
-  int ret = rte_ring_enqueue(ctx->input_pkt_ring, wrapper);
-  if  (ret != 0)
+  // LOG_DEBUG("tcp_input_frontend: 2.2\n");
+  // // put pkt into ctx's ring
+  // int ret = rte_ring_enqueue(ctx->input_pkt_ring, wrapper);
+  // if  (ret != 0)
+  // {   LOG_INFO("input_pkt_ring full.\n");
+  //     // just goto drop;
+  //     goto dropped;
+  // }
+
+
+  int ret = tcp_thread_input_ring_enqueue(hash_code, ip_thread_identify_id - 1, wrapper);
+  if  (ret  != 0)
   {   LOG_INFO("input_pkt_ring full.\n");
       // just goto drop;
       goto dropped;
@@ -747,8 +755,8 @@ tcp_input_frontend(struct pbuf *p, struct netif *inp)
 
   tcp_input_frontend_pkt_cnt[ip_thread_identify_id - 1]++;
 
-  LOG_DEBUG("tcp_input_frontend: 2.3\n");
-  tcp_thread_input_ring_notify(ctx, 1);
+  // LOG_DEBUG("tcp_input_frontend: 2.3\n");
+  // tcp_thread_input_ring_notify(ctx, 1);
 
 
   LOG_DEBUG("tcp_input_frontend: 3, end\n");

@@ -11,6 +11,9 @@
 
 #include "lwip/ip.h"
 
+#define TCP_THREAD_MAX_NUM 32
+#define IP_THREAD_MAX_NUM 16
+
 // for epoll -----------------
 
 typedef int (*epoll_handler_t)(void* data, uint32_t events);
@@ -48,24 +51,24 @@ struct tcp_thread_input_pkt_wrapper {
 #define TCP_THREAD_INPUT_RING_SIZE 512
 
 struct tcp_thread_ctx {
-
-    pthread_t pthread_ctx;
-    struct rte_ring* input_pkt_ring;
-    struct rte_mempool *pktmbuf_pool_tcp_tx;
     int id;
-    volatile int running;
-    int input_event_fd;
-    int loop_state;
-    int epoll_fd;
+    int loop_state;    
+    volatile bool running;
     volatile bool ring_in_process;
+    int input_event_fd;
+    int epoll_fd;
+    
+    pthread_t pthread_ctx;
+    // struct rte_ring* input_pkt_ring;
+    struct rte_mempool *pktmbuf_pool_tcp_tx;
+    // struct epoll_handler_trait input_event_fd_handler;
 
-    struct epoll_handler_trait input_event_fd_handler;
-
+    struct rte_ring* input_pkt_rings[IP_THREAD_MAX_NUM];
 };
 
-void tcp_thread_input_ring_notify(struct tcp_thread_ctx* ctx, uint64_t val);
+void tcp_thread_input_ring_notify(struct tcp_thread_ctx *ctx);
+int tcp_thread_input_ring_enqueue(int tcp_tid, int ip_tid, void* data);
 
-extern _Thread_local volatile int thread_tx_queue_id; // default 0, tcp thread set it to sepcific id;
 
 // extern struct rte_mempool *pktmbuf_pool_tcp_tx;
 // struct rte_mempool* tcp_create_pktmbuf_pool_tcp_tx(int tcp_thread_num);
@@ -86,8 +89,8 @@ struct ip_thread_ctx {
 
 // thread framework -------------------
 
-#define TCP_THREAD_MAX_NUM 32
-#define IP_THREAD_MAX_NUM 32
+// #define TCP_THREAD_MAX_NUM 32
+// #define IP_THREAD_MAX_NUM 32
 
 
 extern struct tcp_thread_ctx tcp_thread_ctxs[TCP_THREAD_MAX_NUM];
@@ -95,6 +98,8 @@ extern struct ip_thread_ctx ip_thread_ctxs[IP_THREAD_MAX_NUM];
 extern int g_tcp_thread_num, g_ip_thread_num; // global variable, init at process initialization, and should not be changed after that.
 extern uint64_t tcp_input_frontend_pkt_cnt[IP_THREAD_MAX_NUM];
 
+
+extern _Thread_local volatile int thread_tx_queue_id; // default 0, tcp thread set it to sepcific id;
 
 static inline struct tcp_thread_ctx* get_tcp_thread_ctx_by_id(int id)
 {
