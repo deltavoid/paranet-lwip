@@ -57,6 +57,7 @@ struct tcp_thread_ctx {
     int input_event_fd;
     int loop_state;
     int epoll_fd;
+    volatile bool ring_in_process;
 
     struct epoll_handler_trait input_event_fd_handler;
 

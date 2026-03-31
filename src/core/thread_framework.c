@@ -46,18 +46,46 @@ _Thread_local volatile int thread_tx_queue_id = 0; // default 0, tcp thread set 
 
 void user_app_init();
 
-uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx)
+
+void tcp_thread_input_ring_notify(struct tcp_thread_ctx *ctx, uint64_t val)
 {
-    ctx->loop_state = 3;
-    uint64_t val = 0;
-    if (read(ctx->input_event_fd, &val, sizeof(val)) != sizeof(val))
+    if  (ctx->ring_in_process)
+        return ;
+    
+    if (write(ctx->input_event_fd, &val, sizeof(val)) != sizeof(val))
+    {
+        perror("write eventfd error");
+    }
+}
+
+int tcp_thread_input_ring_ack(struct tcp_thread_ctx *ctx, uint64_t* val_p)
+{
+    assert(val_p != NULL);
+    if (read(ctx->input_event_fd, val_p, sizeof(*val_p)) != sizeof(*val_p))
     {
         perror("read eventfd error");
-        return 0;
+        return -1;
     }
+    return 0;
+}
+
+#define TCP_THREAD_RUN_MAX_PKT_ONCE 128
+
+uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx, int ring_num)
+{
+    ctx->loop_state = 3;
+    // uint64_t val = 0;
+    // if (read(ctx->input_event_fd, &val, sizeof(val)) != sizeof(val))
+    // {
+    //     perror("read eventfd error");
+    //     return 0;
+    // }
     LOG_DEBUG("tcp_thread_run: 3, ctx_id: %d, get val: %ld\n", ctx->id, val);
 
-    for (uint64_t i = 0; i < val; i++)
+    int process_num = ring_num > TCP_THREAD_RUN_MAX_PKT_ONCE ? 
+            TCP_THREAD_RUN_MAX_PKT_ONCE : ring_num;
+
+    for (int i = 0; i < process_num; i++)
     {
         void *obj_ptr;
         ctx->loop_state = 4;
@@ -88,8 +116,10 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx)
         }
     }
 
-    return val;
+    return process_num;
 }
+
+
 
 /* void*  */ int tcp_thread_run(void* arg)
 {
@@ -114,26 +144,46 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx)
         // tx_flush();
     }
 
+    ctx->ring_in_process = true;
+
     while (ctx->running)
     {
         ctx->loop_state = 2;        
         LOG_DEBUG("tcp_thread_run: 2, id: %d\n", ctx->id);
 
-        int num = epoll_wait(ctx->epoll_fd, events, MAX_EPOLL_EVENT_NUM, 250);
-        LOG_DEBUG("tcp_thread_run: 2, id: %d, epoll_wait return %d\n", ctx->id, num);
-        if  ((num < 0)) 
-            perror("epoll_wait error");
-        
-        for (int i = 0; i < num; i++)
+        int ring_num = rte_ring_count(ctx->input_pkt_ring);
+        if (ring_num == 0)
         {
-            int fd = events[i].data.fd;
-            if  (fd == ctx->input_event_fd)
+            ctx->ring_in_process = false;
+
+            int num = epoll_wait(ctx->epoll_fd, events, MAX_EPOLL_EVENT_NUM, 250);
+            LOG_DEBUG("tcp_thread_run: 2, id: %d, epoll_wait return %d\n", ctx->id, num);
+            if ((num < 0))
+                perror("epoll_wait error");
+
+            for (int i = 0; i < num; i++)
             {
-                pkt_cnt += tcp_thread_poll_input_ring_once(ctx);
+                int fd = events[i].data.fd;
+                if (fd == ctx->input_event_fd)
+                {
+                    uint64_t val;
+                    tcp_thread_input_ring_ack(ctx, &val);
+
+                    // pkt_cnt += tcp_thread_poll_input_ring_once(ctx);
+                    ring_num = rte_ring_count(ctx->input_pkt_ring);
+                    if (ring_num > 0)
+                        ctx->ring_in_process = true;
+                }
+                else
+                {
+                    LOG_INFO("tcp_thread_run, unknown event\n");
+                }
             }
-            else
-            {   LOG_INFO("tcp_thread_run, unknown event\n");
-            }
+        }
+
+        if  (ring_num > 0)
+        {
+            pkt_cnt += tcp_thread_poll_input_ring_once(ctx, ring_num);
         }
 
 
@@ -202,13 +252,7 @@ uint64_t tcp_thread_poll_input_ring_once(struct tcp_thread_ctx* ctx)
     return 0;
 }
 
-void tcp_thread_input_ring_notify(struct tcp_thread_ctx *ctx, uint64_t val)
-{
-    if (write(ctx->input_event_fd, &val, sizeof(val)) != sizeof(val))
-    {
-        perror("write eventfd error");
-    }
-}
+
 
 
 // mem layout: struct rte_mbuf | (@priv) struct tcg_seg | (@data_room) struct pbuf + data
